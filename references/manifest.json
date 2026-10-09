@@ -1,0 +1,69 @@
+{
+  "reviewed": "2026-10-10",
+  "sources": [
+    {
+      "path": "01-effective-context-engineering.md",
+      "source": "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents",
+      "retrieved": "2026-07-31",
+      "kind": "source-snapshot",
+      "sha256": "03bc46038231f137ce34e4def5ec4635744a8ea76f13bcbe15a81f780355cf35",
+      "bytes": 23071
+    },
+    {
+      "path": "02-effective-harnesses-for-long-running-agents.md",
+      "source": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
+      "retrieved": "2026-07-31",
+      "kind": "source-snapshot",
+      "sha256": "f7d435997fc47fdf7214059540a2e8ec90e1d8f4825f1086219529396a9eeaec",
+      "bytes": 14413
+    },
+    {
+      "path": "03-harness-design-for-long-running-apps.md",
+      "source": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+      "retrieved": "2026-07-31",
+      "kind": "source-snapshot",
+      "sha256": "c9791a384d693d40c7fe0b5e5daecc191c88db02f8ddf995bc6875191cefbfad",
+      "bytes": 35448
+    },
+    {
+      "path": "04-harness-engineering.md",
+      "source": "https://openai.com/index/harness-engineering/",
+      "retrieved": "2026-10-09",
+      "kind": "original-research-note",
+      "sha256": "b0ebd4159ec0d12fed1404caa791787a94e7944b88e4d4b7f796be57474a15ca",
+      "bytes": 1083
+    },
+    {
+      "path": "05-agent-evals.md",
+      "source": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+      "retrieved": "2026-10-09",
+      "kind": "source-snapshot",
+      "sha256": "5c1881895746a8c1a6d338f7a6046e959aa722e0306cc2a5816d7dbde579469e",
+      "bytes": 43550
+    },
+    {
+      "path": "06-writing-tools.md",
+      "source": "https://www.anthropic.com/engineering/writing-tools-for-agents",
+      "retrieved": "2026-10-09",
+      "kind": "source-snapshot",
+      "sha256": "84b17a034f3dcdaec1bdb61308aa7221891eca360e2fdac851fe6f1f0275ec1a",
+      "bytes": 25205
+    },
+    {
+      "path": "07-minimal-pi.md",
+      "source": "https://mariozechner.at/posts/2025-11-30-pi-coding-agent/",
+      "retrieved": "2026-10-09",
+      "kind": "source-snapshot",
+      "sha256": "60dab06d66d1563e67468e5346e87ca01f95fd495f6094d0fc4076df5c61711f",
+      "bytes": 46033
+    },
+    {
+      "path": "08-harness-memory.md",
+      "source": "https://www.langchain.com/blog/your-harness-your-memory",
+      "retrieved": "2026-10-09",
+      "kind": "source-snapshot",
+      "sha256": "211d5691130f0d71b281ac9b92d32456fa153001e989bc563d8862c63eacd7c3",
+      "bytes": 11715
+    }
+  ]
+}

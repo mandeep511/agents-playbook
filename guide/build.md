@@ -45,7 +45,9 @@ result:
 ```
 
 An idempotency key works only if the receiver enforces it. Local bookkeeping alone cannot
-prevent a remote service from applying an action twice. Bind approvals to the exact action,
+prevent a remote service from applying an action twice. Persist the client operation ID before
+dispatch; a server-generated job ID can only be saved after acknowledgment. Provide a lookup
+path for lost acknowledgments. Bind approvals to the exact action,
 arguments, destination, and relevant state version; changed proposals need re-evaluation.
 
 ## Durable state, without a framework explosion

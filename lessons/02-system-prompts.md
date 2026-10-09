@@ -27,23 +27,9 @@ addition into a trade, which is the conversation you want to be having.
 
 ## The caution dial is the failure nobody warns you about
 
-Each refusal is defensible alone. Stacked, they produce a tool that cannot do its job, and code
-review will not catch it because every individual line reads as responsible.
-
-**Read your refusals end to end, as one document, and ask whether what remains is the product you
-set out to build.**
-
-Then ask, of each one: *should this be a warning instead?* A warning preserves the capability and
-informs the user. A refusal removes it. Most over-caution is a warning that got promoted.
-
-Two rules that let you tune hard without fear:
-
-- **Keep genuine safety output exempt from every brevity, density and suppression rule** — and
-  enforce that exemption structurally, so the tuning machinery cannot see it. Then aggressive
-  tuning elsewhere is safe by construction.
-- **Copies of a stance multiply.** The same instruction lived in the prompt, a subagent brief, a
-  tool description, and an extractor. Changing a stance means enumerating every site — see
-  *fix the mechanism, not the site* in [01](01-thinking-framework.md).
+Review the combined effect of refusals across prompts, tools, and workers. The canonical
+examples and tuning rules live under [Every guard has a blast radius](01-thinking-framework.md#5-every-guard-has-a-blast-radius).
+When changing a stance, enumerate every copy so one layer does not contradict another.
 
 ## Examples will be rendered as real content
 

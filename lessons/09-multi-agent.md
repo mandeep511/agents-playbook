@@ -1,18 +1,17 @@
 # Multi-agent
 
-Sub-agents are a context lever, not a parallelism trick. One burns tens of thousands of tokens and
-returns 1–2k — so the value is **what it does not bring back.**
-
-Which also tells you when *not* to use one: if you need the reasoning, not just the conclusion, a
-sub-agent is the wrong tool. You get the last message and nothing else.
+Sub-agents can isolate context and parallelize independent work. Return concise conclusions
+with evidence/artifact pointers; token savings depend on the task and runtime. If the parent
+needs intermediate observations, define that handoff explicitly instead of assuming it can
+inspect the child's execution history.
 
 ## Spawn tool design
 
 | Decision | Choose |
 |---|---|
 | How many spawn tools | **One**, with the roster rendered into its description. A tool per specialist is catalogue bloat ([03](03-tools.md)) |
-| Child context | Fresh. Inheriting the parent's context defeats the purpose |
-| Result | The last assistant message, plus an id for resume |
+| Child context | Minimum sufficient brief; inherit history only when its value exceeds its cost |
+| Result | Conclusion, evidence/artifact pointers, unresolved questions, and a resume ID when supported |
 | Depth | Remove the spawn tool from children — **and add an explicit refusal**, because a model that remembers the tool will describe calling it |
 | Concurrency | Capped. One reference harness has no cap at all, which is how you spend a hundred dollars on one question |
 | Turn budget | Per-specialist cap. An agent with no turn limit and a bad premise does not stop |
@@ -23,22 +22,10 @@ have been doing the other half of the work.
 
 ## The two failure modes of long-horizon work
 
-Both are context failures wearing project-management clothes:
-
-1. **The agent tries to one-shot the whole thing** and runs out of context mid-feature, leaving a
-   half-written change and no record of intent.
-2. **A later session looks at existing progress and declares the job done.** This one is worse
-   because it produces a confident, cheerful report.
-
-The fix is a two-role split:
-
-- An **initializer** that builds the environment once — a setup script, a progress log, a first
-  commit, and a **feature list of every requirement, all marked failing.** The list is the ground
-  truth that stops failure mode 2, because "done" becomes checkable rather than a judgement.
-- A **worker** that makes incremental progress and leaves the tree in a mergeable state every time.
-
-The load-bearing artifact is the progress file plus git history — enough that a fresh context window
-reconstructs state fast. Optimise it for a reader who has no memory, because that is who reads it.
+A worker can attempt too much in one session or mistake partial progress for completion.
+Use durable milestones and explicit completion checks; an initializer/worker split is one
+option. See [Context is a view; state is a record](../guide/fundamentals.md#6-context-is-a-view-state-is-a-record)
+and [the original long-running experiment](../references/02-effective-harnesses-for-long-running-agents.md).
 
 ## Agree what "done" means before code is written
 
@@ -64,7 +51,9 @@ git commit -m … -- <paths>          # reads the WORKING TREE at those paths
 changed, the pathspec commits theirs along with yours, and your message describes half of what
 landed. Two agents inside one file is the common case, not the exotic one.
 
-The mechanism that works is to build the commit through the **index**: stage a blob containing only
+Prefer isolated worktrees or serialized ownership of the index. A shared index is mutable global
+state: concurrent staging can change the commit after inspection. With exclusive index access,
+one technique is to stage a blob containing only
 your own hunks (`git hash-object -w`, then `git update-index --cacheinfo`, which never touches the
 working tree), then `git commit` with no pathspec at all — so the commit is exactly the index.
 

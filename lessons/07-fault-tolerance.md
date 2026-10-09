@@ -13,14 +13,16 @@ Map provider status to a **reason**, and give each reason its own behaviour:
 | Reason | Behaviour |
 |---|---|
 | Rate limit | Jittered backoff, retry |
-| Timeout | Retry, fewer times |
+| Timeout | For a safe read, retry within budget. After a possible write, mark outcome unknown and reconcile before repeating |
 | Billing / quota | Stop. Cooldown, surface it. Never retry — you will burn the remaining balance faster |
 | Auth | Stop. No amount of retrying fixes a key |
 | Malformed request | Stop. **This is your bug**, and the retry hides it |
 | Output overflow | Parse the error, retry with a reduced budget |
 
-Then a ladder: jittered backoff a few times, **fall back to another model**, and only then fail. And
-give the whole thing a cooldown so a provider outage does not become a spend event.
+For transient model/read failures, use bounded jittered backoff. Fall back only when the
+alternative preserves required capabilities, data handling, and task semantics. Auth, malformed
+requests, and uncertain writes need their own paths. Share one task-wide retry budget so nested
+layers cannot multiply attempts. See [the crash window](../guide/build.md#durable-state-without-a-framework-explosion).
 
 ## Models are config, so a defect can hide behind whichever one a role points at
 

@@ -2,7 +2,7 @@
 
 **A model proposes. A harness makes work observable, bounded, recoverable, and verifiable.**
 
-For humans starting from zero and agents building in any domain. Updated **9 October 2026**.
+For humans starting from zero and agents building in any domain. Updated **10 October 2026**.
 
 ## Pick a path
 

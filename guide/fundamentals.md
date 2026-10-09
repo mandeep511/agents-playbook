@@ -121,3 +121,18 @@ prove the original target, permissions, or preconditions still hold. See the [lo
 
 These are design hypotheses, not universal performance claims. The useful innovation is often
 one better representation or feedback signal—not another agent.
+
+## Try the idea in a new niche
+
+Pick a field and complete this sentence: **The agent observes ___, changes ___ through ___,
+and knows it worked because ___.** If the final blank is vague, improve the feedback before
+adding intelligence.
+
+| Niche | Useful representation | Cheap rehearsal | Completion evidence |
+|---|---|---|---|
+| Architecture | Editable floor plan + constraints | Geometry checks and walkthrough | Clearances, area, circulation, expert review |
+| Music | Stems + arrangement timeline | Short mix previews | Loudness checks, listening review, export integrity |
+| Lab research | Protocol + sample/experiment ledger | Simulation or dry-run plan | Instrument records, controls, reproducible analysis |
+
+Exercise: delete the agent and execute one task manually through its proposed tools. Missing
+information and awkward actions expose harness problems before a model makes them harder to see.

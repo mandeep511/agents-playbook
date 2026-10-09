@@ -78,7 +78,7 @@ Decoupling the expectations from the record is the right end state. **Detection 
 deliberately**, because it is cheap, it protects whichever fixture you end up on, and it turns a
 silent false signal into a loud refusal.
 
-## Generator and evaluator must be different
+## Separate generation from evaluation when needed
 
 Agents grading their own work confidently praise mediocre output, and the effect is strongest exactly
 where you need judgement — subjective quality.
@@ -90,7 +90,9 @@ produces the work.
 For subjective output, make it gradable: explicit criteria with hard thresholds, calibrated using
 few-shot examples that include the score breakdown, not just the verdict.
 
-**Builder and critic must be different agents, and critics may not fix.**
+For an independent review pass, keep the critic separate from the builder and return findings
+before edits. This is useful for subjective review; deterministic tests do not require another
+agent. Separate agents can share biases, so calibrate their judgments against external evidence.
 
 > **Observed** · A layer passed its own full test suite with four critical defects live.
 

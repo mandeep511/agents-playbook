@@ -114,9 +114,10 @@ Everything the harness adds between turns is a liability with a token cost.
 - **One wrapper kind**, on synthetic meta messages. Name every payload kind.
 - **A cadence rule so nudges do not repeat.** A reminder that fires every turn is noise by turn
   three, and the model learns to skip the wrapper — including the times it mattered.
-- **Every producer gets a timeout (~1s), swallows errors to empty, and there is a global kill
-  switch.** A context assembler with budgets but no timeout and no failure semantics will hang a
-  turn on a slow disk.
+- **Bound every producer and define failure behavior.** Optional enrichment may be omitted with
+  a recorded failure marker. Missing authoritative constraints or permissions must block the
+  dependent action; never silently turn that failure into an empty successful read. Choose
+  timeouts for the source and task, rather than applying one universal value.
 - **Persist injections with the transcript** rather than stripping them on save. Otherwise the
   replay is not what ran.
 - **Cap how much may be force-included.** "Everything is important" is the same failure as marking

@@ -1,7 +1,9 @@
 # Lessons — what building one actually taught us
 
-Nine docs on making an agent robust, fault-tolerant and well-tuned. Everything here was
-measured in working, tested code, not reasoned about in advance.
+[Start with the domain-neutral guide](../README.md). These nine docs preserve the original
+project's implementation lessons and reported observations. Their underlying experiments were
+not rerun for this edition. Numeric thresholds and runtime-specific choices are local examples,
+not universal defaults. Repeated principles now link to a canonical section.
 
 `../references/` holds the primary sources — public engineering posts on context and harness
 design. Read those for *what the design space looks like*. Read these for *what breaks anyway*.
@@ -22,19 +24,8 @@ design. Read those for *what the design space looks like*. Read these for *what 
 
 ## The five laws
 
-Every specific rule in these docs is one of these five wearing different clothes. If you
-remember nothing else:
-
-1. **Absence is not a determination.** Three outcomes need three values, and the unknown one is
-   never the default.
-2. **A pass is only as strong as its population.** When a check goes green, ask what it could
-   not see.
-3. **Enumerate permissions, not prohibitions.** You cannot enumerate absences, so a guard
-   written as a blocklist is wrong by construction.
-4. **Guard the value where it lands, not where you hope it was made.** An assertion one boundary
-   away from the decision is decoration.
-5. **Every guard has a blast radius.** A gate can cause the harm it exists to prevent, and
-   caution compounds into uselessness.
+Read [the five laws](01-thinking-framework.md) for the canonical principles and their examples.
+Use the table above to jump directly to the implementation problem you have.
 
 ## How to read the instances
 

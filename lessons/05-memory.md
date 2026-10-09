@@ -90,8 +90,11 @@ answer.
 > Found by a test that failed once in five runs, which is the tell: a 1-in-5 flake in a suppression
 > lookup is a suppression that happens sometimes and cannot be reproduced.
 
-**Prefer asserting the structural claim over any timestamp order** — the row whose `supersedes IS
-NULL` is *defined* as current; the newest row merely usually is.
+**Prefer the structural definition of current over timestamp order.** If a new row stores
+`supersedes = old_id`, the current row is one that no later valid row supersedes (an anti-join).
+If the schema instead stores `superseded_by`, current may mean that field is null. State the
+pointer direction explicitly: `supersedes IS NULL` can identify the oldest row in the first
+schema, not the current one.
 
 If you do need a tiebreak, note that SQLite does not expose `rowid` through a view, so a `_current`
 view cannot be ordered safely at all and the query has to run the view's predicate against the base
@@ -113,8 +116,6 @@ the history is a place the replay can diverge from what ran.
 
 ## Injecting memories into a turn
 
-- **Cap how many may be force-included.** "Everything is important" is the same failure as marking
-  nothing important.
-- **Prefer conditional injection** — a predicate on the active topic — over always-on.
-- Budget the tokens per turn, and count the injected size separately from the raw size. See
-  [04](04-context.md).
+Use the shared [context injection rules](04-context.md#injection-discipline): conditional
+selection, per-source budgets, provenance, and reproducible logging. Memory-specific trust
+rules are in [Memory is a claim](#memory-is-a-claim-not-an-instruction).
