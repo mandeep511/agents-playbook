@@ -1,0 +1,3009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Production Agent Playbook — AI SDK × Claude Code patterns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-eyebrow">
+    A field manual <span>·</span> AI SDK + Claude Code patterns <span>·</span> for engineers shipping agents
+  </div>
+  <h1 class="title">The Production <em>Agent</em> Playbook</h1>
+  <p class="masthead-sub">
+    Everything load-bearing about building a tool-using LLM agent that survives contact with real users — context management, recovery, persistence, retrieval, the lot. Optimised for re-reading, not for first-reading.
+  </p>
+  <div class="masthead-meta">
+    <div><strong>30 chapters</strong> · ~25 min skim, hours to absorb</div>
+    <div><strong>Stack</strong> · Vercel AI SDK 6 · Anthropic-style patterns</div>
+    <div><strong>Bias</strong> · operational, not theoretical</div>
+  </div>
+</header>
+
+<div class="layout">
+
+<nav class="toc" aria-label="Table of contents">
+
+  <div class="toc-part">I &middot; Foundations</div>
+  <a class="toc-link" href="#ch01"><span class="toc-num">01</span><span>Anatomy of an agent</span></a>
+  <a class="toc-link" href="#ch02"><span class="toc-num">02</span><span>The loop</span></a>
+
+  <div class="toc-part">II &middot; Tools</div>
+  <a class="toc-link" href="#ch03"><span class="toc-num">03</span><span>Tool design</span></a>
+  <a class="toc-link" href="#ch04"><span class="toc-num">04</span><span>Errors &amp; steering</span></a>
+  <a class="toc-link" href="#ch05"><span class="toc-num">05</span><span>Self-correction loops</span></a>
+
+  <div class="toc-part">III &middot; Context</div>
+  <a class="toc-link" href="#ch06"><span class="toc-num">06</span><span>System prompts</span></a>
+  <a class="toc-link" href="#ch07"><span class="toc-num">07</span><span>The reminder envelope</span></a>
+  <a class="toc-link" href="#ch08"><span class="toc-num">08</span><span>Auto-injection</span></a>
+
+  <div class="toc-part">IV &middot; Survival</div>
+  <a class="toc-link" href="#ch09"><span class="toc-num">09</span><span>Compaction</span></a>
+  <a class="toc-link" href="#ch10"><span class="toc-num">10</span><span>Error recovery</span></a>
+  <a class="toc-link" href="#ch11"><span class="toc-num">11</span><span>Loop control</span></a>
+
+  <div class="toc-part">V &middot; Memory</div>
+  <a class="toc-link" href="#ch12"><span class="toc-num">12</span><span>Persistent chats</span></a>
+  <a class="toc-link" href="#ch13"><span class="toc-num">13</span><span>Persistent memory</span></a>
+  <a class="toc-link" href="#ch14"><span class="toc-num">14</span><span>Awareness</span></a>
+
+  <div class="toc-part">VI &middot; Retrieval</div>
+  <a class="toc-link" href="#ch15"><span class="toc-num">15</span><span>Filesystem RAG</span></a>
+  <a class="toc-link" href="#ch16"><span class="toc-num">16</span><span>Document parsing &amp; OCR</span></a>
+  <a class="toc-link" href="#ch17"><span class="toc-num">17</span><span>Chunking strategies</span></a>
+  <a class="toc-link" href="#ch18"><span class="toc-num">18</span><span>Embeddings &amp; vectors</span></a>
+  <a class="toc-link" href="#ch19"><span class="toc-num">19</span><span>Reranking</span></a>
+  <a class="toc-link" href="#ch20"><span class="toc-num">20</span><span>Hybrid retrieval</span></a>
+
+  <div class="toc-part">VII &middot; Scaling</div>
+  <a class="toc-link" href="#ch21"><span class="toc-num">21</span><span>Providers &amp; middleware</span></a>
+  <a class="toc-link" href="#ch22"><span class="toc-num">22</span><span>Streaming &amp; UI</span></a>
+  <a class="toc-link" href="#ch23"><span class="toc-num">23</span><span>Subagents &amp; hooks</span></a>
+
+  <div class="toc-part">VIII &middot; Ship</div>
+  <a class="toc-link" href="#ch24"><span class="toc-num">24</span><span>Production checklist</span></a>
+
+  <div class="toc-part">IX &middot; Hard-won</div>
+  <a class="toc-link" href="#ch25"><span class="toc-num">25</span><span>Absence is not a determination</span></a>
+  <a class="toc-link" href="#ch26"><span class="toc-num">26</span><span>Populations, not passes</span></a>
+  <a class="toc-link" href="#ch27"><span class="toc-num">27</span><span>Permissions, not prohibitions</span></a>
+  <a class="toc-link" href="#ch28"><span class="toc-num">28</span><span>Guard where it lands</span></a>
+  <a class="toc-link" href="#ch29"><span class="toc-num">29</span><span>Blast radius</span></a>
+  <a class="toc-link" href="#ch30"><span class="toc-num">30</span><span>The lessons</span></a>
+
+</nav>
+
+<main>
+
+<!-- ============================================== -->
+<!-- PART I — FOUNDATIONS -->
+<!-- ============================================== -->
+
+<div class="part-marker">
+  <span class="part-roman">I.</span>
+  <span class="part-name">Foundations</span>
+  <span class="part-dash"></span>
+  <span>What an agent actually is</span>
+</div>
+
+<section class="chapter" id="ch01">
+  <div class="ch-head">
+    <div class="ch-num">01</div>
+    <div>
+      <h2 class="ch-title">Anatomy of an agent</h2>
+      <p class="ch-tldr">LLM + tools + a loop that controls context. Three responsibilities; one of them is invisible.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>An agent has three components and one job each:</p>
+
+    <ul class="bare">
+      <li><strong>LLM</strong> &mdash; decide the next action.</li>
+      <li><strong>Tools</strong> &mdash; act on the world (read, write, fetch, call APIs).</li>
+      <li><strong>Loop</strong> &mdash; manage context, decide when the task is done, recover when something breaks.</li>
+    </ul>
+
+    <p>Engineers fixate on the first two. The loop is where production agents fall apart. Most of this playbook is about the loop.</p>
+
+    <h4>The four hidden responsibilities of the loop</h4>
+    <ol>
+      <li>Decide what the model <em>sees</em> each step (input gating).</li>
+      <li>Decide when the loop <em>ends</em> (stop conditions).</li>
+      <li>Decide how the loop <em>survives</em> failures (recovery).</li>
+      <li>Decide what gets <em>persisted</em> between sessions (memory).</li>
+    </ol>
+
+    <div class="callout tip">
+      <div class="callout-head">Mental model</div>
+      The model is a stateless function from <code>(system, messages, tools)</code> to <code>(text | tool_call)</code>. Everything else &mdash; cache, history, memory, retrieval &mdash; is your job. The "agent" abstraction is just code around that function.
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch02">
+  <div class="ch-head">
+    <div class="ch-num">02</div>
+    <div>
+      <h2 class="ch-title">The loop</h2>
+      <p class="ch-tldr"><code>streamText</code> with <code>stopWhen</code>, <code>prepareStep</code>, <code>onStepFinish</code>. Three callbacks, total control.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <div class="diagram">
+      <span class="diagram-label">The loop · one step</span>
+      <div class="dgm-row">
+        <div class="dgm-box big primary">Model<span class="sub">decides</span></div>
+        <span class="dgm-arrow">→</span>
+        <div class="dgm-box big">Tool call?<span class="sub">if any</span></div>
+        <span class="dgm-arrow">→</span>
+        <div class="dgm-box big">Execute<span class="sub">your code</span></div>
+        <span class="dgm-arrow">→</span>
+        <div class="dgm-box big">Result<span class="sub">back to model</span></div>
+      </div>
+      <div class="dgm-row" style="margin-top: 0.6rem;">
+        <div class="dgm-box muted">stopWhen?</div>
+        <span class="dgm-arrow">↻</span>
+        <span style="font-family: var(--f-body); font-style: italic; color: var(--ink-muted); font-size: 0.85rem;">no &rarr; next step. yes &rarr; exit.</span>
+      </div>
+      <p class="dgm-caption">Three callbacks own everything: <code>stopWhen</code>, <code>prepareStep</code>, <code>onStepFinish</code>.</p>
+    </div>
+
+    <p>The AI SDK loop runs each step: model call &rarr; tool calls (if any) &rarr; tool results &rarr; back to the model. It stops when:</p>
+    <ul>
+      <li>The model emits text without a tool call.</li>
+      <li>A <code>stopWhen</code> condition fires.</li>
+      <li>A tool has no <code>execute</code> (you handle it client-side).</li>
+      <li>A tool needs approval.</li>
+    </ul>
+
+<pre data-lang="typescript"><span class="k">import</span> { streamText, stepCountIs, hasToolCall } <span class="k">from</span> <span class="s">'ai'</span>;
+
+<span class="k">const</span> result = <span class="f">streamText</span>({
+  model,
+  system,
+  messages,
+  tools,
+
+  <span class="c">// 1. when to stop — compose freely</span>
+  stopWhen: [<span class="f">stepCountIs</span>(<span class="l">20</span>), <span class="f">hasToolCall</span>(<span class="s">'finish'</span>), budgetGuard],
+
+  <span class="c">// 2. per-step lever — change anything before each step</span>
+  prepareStep: <span class="k">async</span> ({ stepNumber, steps, messages }) =&gt; {
+    <span class="k">if</span> (messages.length &gt; <span class="l">40</span>) {
+      <span class="k">return</span> { messages: [messages[<span class="l">0</span>], ...messages.<span class="f">slice</span>(-<span class="l">20</span>)] };
+    }
+    <span class="k">return</span> {};
+  },
+
+  <span class="c">// 3. observe and persist — runs after each step</span>
+  onStepFinish: ({ stepNumber, text, toolCalls, toolResults, usage }) =&gt; {
+    <span class="f">saveStep</span>(stepNumber, { text, toolCalls, toolResults });
+    <span class="f">trackUsage</span>(usage);
+  },
+});
+</pre>
+
+    <h4>Stop conditions you should actually have</h4>
+    <table>
+      <tr><th>Condition</th><th>Why</th></tr>
+      <tr><td><code>stepCountIs(N)</code></td><td>Always. Hard ceiling against runaway loops.</td></tr>
+      <tr><td><code>budgetGuard</code></td><td>Stop if cumulative <code>usage</code> &gt; $X. Cheap insurance.</td></tr>
+      <tr><td><code>hasToolCall('done')</code></td><td>Explicit "I'm finished" signal from the model.</td></tr>
+      <tr><td><code>verifyClean</code></td><td>Don't let the model "finish" while lint/tests fail. See <a href="#ch05">§5</a>.</td></tr>
+    </table>
+
+    <div class="callout steal">
+      <div class="callout-head">Steal</div>
+      A custom <code>StopCondition</code> is just <code>({ steps }) =&gt; boolean</code>. Sum <code>usage</code> across steps, multiply by price, return <code>true</code> if &gt; budget. Done.
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PART II — TOOLS -->
+<!-- ============================================== -->
+
+<div class="part-marker">
+  <span class="part-roman">II.</span>
+  <span class="part-name">Tools</span>
+  <span class="part-dash"></span>
+  <span>The agent's hands</span>
+</div>
+
+<section class="chapter" id="ch03">
+  <div class="ch-head">
+    <div class="ch-num">03</div>
+    <div>
+      <h2 class="ch-title">Tool design</h2>
+      <p class="ch-tldr">Few, narrow, well-described. The description is part of the prompt; the schema is your validation.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+<pre data-lang="typescript"><span class="k">import</span> { tool } <span class="k">from</span> <span class="s">'ai'</span>;
+<span class="k">import</span> { z } <span class="k">from</span> <span class="s">'zod'</span>;
+
+<span class="k">const</span> readFile = <span class="f">tool</span>({
+  description: <span class="s">'Read a UTF-8 file. Returns content with line numbers prefixed (1-indexed).'</span>,
+  inputSchema: z.<span class="f">object</span>({
+    path: z.<span class="f">string</span>().<span class="f">describe</span>(<span class="s">'relative path from workspace root'</span>),
+    startLine: z.<span class="f">number</span>().<span class="f">nullable</span>().<span class="f">describe</span>(<span class="s">'1-indexed; null for start of file'</span>),
+    endLine: z.<span class="f">number</span>().<span class="f">nullable</span>().<span class="f">describe</span>(<span class="s">'1-indexed inclusive; null for end of file'</span>),
+  }),
+  execute: <span class="k">async</span> ({ path, startLine, endLine }) =&gt; {
+    <span class="c">// always return a Result — never throw for expected failures</span>
+    <span class="k">return</span> <span class="f">readFileImpl</span>(path, startLine, endLine);
+  },
+});
+</pre>
+
+    <h4>Rules of thumb</h4>
+    <ul>
+      <li>Keep tool count low — <strong>5 or fewer</strong> for weaker models, ≤15 even for strong ones.</li>
+      <li><code>.describe()</code> every field. The schema is read by the model.</li>
+      <li>Use <code>.nullable()</code>, not <code>.optional()</code> &mdash; strict-mode providers reject optional fields.</li>
+      <li>Avoid deeply nested unions in schemas. Models fail at them.</li>
+      <li>Set <code>temperature: 0</code> for tool-heavy workflows.</li>
+      <li>Name tools semantically: <code>readFile</code> &gt; <code>fileOp</code>. The name is a prompt.</li>
+      <li>Advertise idempotency in the description: <em>"Cached for 15 minutes."</em> Prevents redundant calls.</li>
+    </ul>
+
+    <div class="compare">
+      <div class="do">
+        <h5>Return a Result envelope</h5>
+        A discriminated union: <code>{ok:true, data} | {ok:false, error:{code, message, hint}}</code>. Tool errors become next-step reasoning fuel.
+      </div>
+      <div class="dont">
+        <h5>Throw on expected errors</h5>
+        Throwing inside <code>execute</code> for things you expect to happen (file not found, validation fail) kills the turn. Results steer it.
+      </div>
+    </div>
+
+    <h4>The Result envelope</h4>
+<pre data-lang="typescript"><span class="k">type</span> <span class="t">Result</span>&lt;<span class="t">T</span>&gt; =
+  | { ok: <span class="k">true</span>; data: <span class="t">T</span>; warnings?: string[] }
+  | { ok: <span class="k">false</span>; error: { code: string; message: string; hint?: string } };
+</pre>
+
+    <p>Throw only when the infrastructure is broken (disk error, OOM). Use <code>{ok:false}</code> for everything the model can recover from.</p>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch04">
+  <div class="ch-head">
+    <div class="ch-num">04</div>
+    <div>
+      <h2 class="ch-title">Errors &amp; steering</h2>
+      <p class="ch-tldr">Every error message is a prompt. Write it like one.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>The model's next action is shaped by what your error said. Prescriptive errors recover; vague errors loop.</p>
+
+    <div class="compare">
+      <div class="dont">
+        <h5>Vague (the model retries blindly)</h5>
+        <code>"File operation failed"</code><br>
+        <code>"Invalid input"</code><br>
+        <code>"Error 500"</code>
+      </div>
+      <div class="do">
+        <h5>Steering (the model knows the next move)</h5>
+        <em>"Found 3 matches but <code>replace_all</code> is false. To replace all, set <code>replace_all: true</code>. To replace one, provide more context to make the string unique."</em>
+      </div>
+    </div>
+
+    <h4>Verbatim from Claude Code &mdash; steering errors in production</h4>
+
+    <blockquote class="verbatim">
+      File has not been read yet. Read it first before writing to it.
+      <cite>FileEditTool — on Edit-without-prior-Read</cite>
+    </blockquote>
+
+    <blockquote class="verbatim">
+      File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.
+      <cite>FileEditTool — on stale read cache</cite>
+    </blockquote>
+
+    <blockquote class="verbatim">
+      File content (152K tokens) exceeds maximum allowed tokens (25K). Use <code>offset</code> and <code>limit</code> parameters to read specific portions of the file, or search for specific content instead of reading the whole file.
+      <cite>FileReadTool — on oversize file</cite>
+    </blockquote>
+
+    <h4>The "Did you mean…" pattern</h4>
+
+    <p>On any not-found error, compute the nearest match and offer it. Costs nothing, prevents retry death-spirals.</p>
+
+<pre data-lang="typescript"><span class="k">if</span> (!exists) {
+  <span class="k">const</span> suggestions = <span class="f">findSimilar</span>(path, knownPaths, { max: <span class="l">3</span> });
+  <span class="k">return</span> {
+    ok: <span class="k">false</span>,
+    error: {
+      code: <span class="s">'NotFound'</span>,
+      message: <span class="s">`No file at </span>${path}<span class="s">.`</span>,
+      hint: suggestions.length
+        ? <span class="s">`Did you mean: </span>${suggestions.<span class="f">join</span>(<span class="s">', '</span>)}<span class="s">?`</span>
+        : <span class="s">`Use </span><span class="s">list_files</span><span class="s"> to see what's available.`</span>,
+    },
+  };
+}
+</pre>
+
+    <h4>Tool-call repair</h4>
+    <p>When the model emits a malformed tool call (wrong schema), the AI SDK can repair it with a side LLM call instead of wasting a turn:</p>
+
+<pre data-lang="typescript">experimental_repairToolCall: <span class="k">async</span> ({ toolCall, tools, error }) =&gt; {
+  <span class="k">if</span> (NoSuchToolError.<span class="f">isInstance</span>(error)) <span class="k">return</span> <span class="k">null</span>;
+  <span class="k">const</span> { object } = <span class="k">await</span> <span class="f">generateObject</span>({
+    model: cheaperModel,
+    schema: tools[toolCall.toolName].inputSchema,
+    prompt: <span class="s">`Repair the invalid input: </span>${<span class="f">JSON.stringify</span>(toolCall.input)}<span class="s">`</span>,
+  });
+  <span class="k">return</span> { ...toolCall, input: <span class="f">JSON.stringify</span>(object) };
+}
+</pre>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch05">
+  <div class="ch-head">
+    <div class="ch-num">05</div>
+    <div>
+      <h2 class="ch-title">Self-correction loops</h2>
+      <p class="ch-tldr">Generate &rarr; evaluate &rarr; regenerate. Bound the iterations. Inject the feedback.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>The <strong>evaluator-optimiser</strong> pattern. Run an LLM, judge its output with another (structured) LLM, regenerate with feedback if quality is low. Bound by max-iterations.</p>
+
+<pre data-lang="typescript"><span class="k">async</span> <span class="k">function</span> <span class="f">withFeedback</span>(prompt: string) {
+  <span class="k">let</span> output = <span class="k">await</span> <span class="f">generate</span>(prompt);
+
+  <span class="k">for</span> (<span class="k">let</span> i = <span class="l">0</span>; i &lt; <span class="l">3</span>; i++) {
+    <span class="k">const</span> { object: evaluation } = <span class="k">await</span> <span class="f">generateObject</span>({
+      model,
+      schema: z.<span class="f">object</span>({
+        score: z.<span class="f">number</span>().<span class="f">min</span>(<span class="l">1</span>).<span class="f">max</span>(<span class="l">10</span>),
+        issues: z.<span class="f">array</span>(z.<span class="f">string</span>()),
+        suggestions: z.<span class="f">array</span>(z.<span class="f">string</span>()),
+      }),
+      prompt: <span class="s">`Evaluate against criteria X, Y, Z:\n</span>${output}<span class="s">`</span>,
+    });
+
+    <span class="k">if</span> (evaluation.score &gt;= <span class="l">8</span>) <span class="k">break</span>;
+
+    output = <span class="k">await</span> <span class="f">generate</span>(<span class="s">`Improve based on:\n</span>${evaluation.issues.<span class="f">join</span>(<span class="s">'\n'</span>)}<span class="s">\n\nOriginal:\n</span>${output}<span class="s">`</span>);
+  }
+
+  <span class="k">return</span> output;
+}
+</pre>
+
+    <h4>The "verify before stop" pattern</h4>
+
+    <p>For agents that do destructive work (code edits, data changes), make a custom <code>StopCondition</code> that <em>refuses to let the agent finish</em> if verification fails. Combine with an injected reminder so the next step has the feedback.</p>
+
+<pre data-lang="typescript"><span class="k">const</span> verifyClean: <span class="t">StopCondition</span>&lt;<span class="k">typeof</span> tools&gt; = ({ steps }) =&gt; {
+  <span class="k">const</span> lastBuild = steps.<span class="f">findLast</span>(s =&gt;
+    s.toolCalls?.<span class="f">some</span>(c =&gt; c.toolName === <span class="s">'build'</span>));
+  <span class="k">const</span> errors = lastBuild?.toolResults?.[<span class="l">0</span>]?.output?.errors ?? [];
+  <span class="k">return</span> errors.length === <span class="l">0</span>; <span class="c">// stop only if clean</span>
+};
+
+<span class="c">// Combined with prepareStep that injects the build errors as feedback:</span>
+prepareStep: <span class="k">async</span> ({ steps, messages }) =&gt; {
+  <span class="k">const</span> errors = <span class="f">latestBuildErrors</span>(steps);
+  <span class="k">if</span> (errors.length &amp;&amp; <span class="f">lastMessageIsAssistantTryingToStop</span>(messages)) {
+    <span class="k">return</span> {
+      messages: [...messages, {
+        role: <span class="s">'user'</span>,
+        content: <span class="f">wrapInSystemReminder</span>(<span class="s">`Build still has </span>${errors.length}<span class="s"> errors:\n</span>${errors.<span class="f">join</span>(<span class="s">'\n'</span>)}<span class="s">\nFix before finishing.`</span>),
+      }],
+    };
+  }
+  <span class="k">return</span> {};
+}
+</pre>
+
+    <div class="callout gotcha">
+      <div class="callout-head">Gotcha</div>
+      Every retry loop needs a counter cap. Claude Code documented "1,279 sessions had 50+ consecutive failures, wasting ~250K API calls/day" before they added <code>MAX_CONSECUTIVE_FAILURES = 3</code>. Bound everything.
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PART III — CONTEXT -->
+<!-- ============================================== -->
+
+<div class="part-marker">
+  <span class="part-roman">III.</span>
+  <span class="part-name">Context</span>
+  <span class="part-dash"></span>
+  <span>What the model sees</span>
+</div>
+
+<section class="chapter" id="ch06">
+  <div class="ch-head">
+    <div class="ch-num">06</div>
+    <div>
+      <h2 class="ch-title">System prompts</h2>
+      <p class="ch-tldr">Split into static (cacheable) and dynamic (per-turn). Mark the boundary. Cache the prefix.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <h4>The two halves</h4>
+
+    <table>
+      <tr><th>Static prefix &mdash; <em>cacheable</em></th><th>Dynamic suffix &mdash; <em>not cacheable</em></th></tr>
+      <tr>
+        <td>
+          Identity &amp; role<br>
+          Tool philosophy<br>
+          Anti-patterns ("don't do X")<br>
+          Output style rules<br>
+          Domain knowledge / cheatsheets
+        </td>
+        <td>
+          Current date / time<br>
+          Workspace state<br>
+          File tree snapshot<br>
+          User profile<br>
+          Anything that changes per session
+        </td>
+      </tr>
+    </table>
+
+<pre data-lang="typescript"><span class="k">const</span> SYSTEM_PROMPT_BOUNDARY = <span class="s">'\n\n--- DYNAMIC CONTEXT BELOW ---\n\n'</span>;
+
+<span class="k">const</span> system = STATIC_PROMPT + SYSTEM_PROMPT_BOUNDARY + <span class="f">buildDynamic</span>(state);
+
+<span class="c">// On Anthropic, mark the static half for prompt caching:</span>
+providerOptions: {
+  anthropic: {
+    cacheControl: { type: <span class="s">'ephemeral'</span> }, <span class="c">// caches the static prefix</span>
+  },
+}
+</pre>
+
+    <h4>What belongs in the static prefix</h4>
+
+    <ul class="bare">
+      <li><strong>Identity</strong> &mdash; "You are X for Y, optimised for Z."</li>
+      <li><strong>Tone rules</strong> &mdash; how to respond, response length, format.</li>
+      <li><strong>Tool philosophy</strong> &mdash; when to use which tool. The model can't always tell from descriptions alone.</li>
+      <li><strong>Anti-patterns</strong> &mdash; the bugs you've actually seen. "Don't paste line-numbered output back into edits." Negative examples train better than positive ones.</li>
+      <li><strong>Convention teaching</strong> &mdash; "<code>&lt;system-reminder&gt;</code> tags contain useful information…" (see <a href="#ch07">§7</a>).</li>
+    </ul>
+
+    <div class="callout gotcha">
+      <div class="callout-head">Gotcha</div>
+      Anything dated in the static prefix busts the cache every day. Put dates in the dynamic suffix or in a prepended user reminder.
+    </div>
+
+    <h4>Anti-patterns as actual prose</h4>
+
+    <p>Don't be polite. Quote the failure:</p>
+
+<pre data-lang="text">## Anti-patterns observed in this codebase
+
+- Don't summarize what you did at the end of every response; the user can read the diff.
+- Don't paste line-numbered <span class="f">read_file</span> output back into <span class="f">edit_file</span>; strip the prefixes.
+- Don't run <span class="f">build()</span> twice in a row; the second call wastes tokens.
+- "karate expert wearing white gi rendered across all art styles" was wrong — when the user said "expert" they meant skill, not attire.
+</pre>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch07">
+  <div class="ch-head">
+    <div class="ch-num">07</div>
+    <div>
+      <h2 class="ch-title">The <em>&lt;system-reminder&gt;</em> envelope</h2>
+      <p class="ch-tldr">A wrapper convention that lets you speak to the model in the user role. Teach it once; use it everywhere.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p><code>&lt;system-reminder&gt;</code> is not an API feature. It's a wrapper tag you put around any text that should <em>feel system-spoken</em> &mdash; even though it arrives in the <code>user</code> role. The model must be taught what it means.</p>
+
+<pre data-lang="typescript"><span class="k">export</span> <span class="k">function</span> <span class="f">wrapInSystemReminder</span>(content: string): string {
+  <span class="k">return</span> <span class="s">`&lt;system-reminder&gt;\n</span>${content}<span class="s">\n&lt;/system-reminder&gt;`</span>;
+}
+</pre>
+
+    <h4>Teach it in the system prompt</h4>
+
+    <blockquote class="verbatim">
+      Tool results and user messages may include <code>&lt;system-reminder&gt;</code> tags. <code>&lt;system-reminder&gt;</code> tags contain useful information and reminders. They are automatically added by the system, and bear no direct relation to the specific tool results or user messages in which they appear.
+      <cite>Claude Code constants/prompts.ts</cite>
+    </blockquote>
+
+    <p>Now you can inject context into the conversation without bloating the system prompt (which should stay cacheable) and without confusing it with real user input.</p>
+
+    <h4>What to wrap</h4>
+
+    <table>
+      <tr><th>Use case</th><th>When</th></tr>
+      <tr><td>Per-turn metadata</td><td>Date, user email, cwd, env. Prepended to messages.</td></tr>
+      <tr><td>File-change notices</td><td>"X was modified since you read it." After Edit/Write.</td></tr>
+      <tr><td>Tool reminders</td><td>"You haven't used <code>TodoWrite</code> in 10 turns." Cadence-based.</td></tr>
+      <tr><td>Loaded skills</td><td>"The following skills are available…" After skill registration.</td></tr>
+      <tr><td>Recovery hints</td><td>"Build still has 3 errors." Injected at stop-attempt.</td></tr>
+    </table>
+
+    <h4>The per-turn context block</h4>
+
+<pre data-lang="typescript"><span class="c">// Prepend before every model call:</span>
+<span class="k">const</span> contextReminder = <span class="f">wrapInSystemReminder</span>(<span class="s">`
+As you answer the user's questions, you can use the following context:
+# currentDate
+</span>${<span class="k">new</span> <span class="f">Date</span>().<span class="f">toISOString</span>()}<span class="s">
+# userEmail
+</span>${user.email}<span class="s">
+# cwd
+</span>${process.cwd()}<span class="s">
+
+IMPORTANT: this context may or may not be relevant. Don't respond to it unless it's highly relevant.
+`</span>);
+
+messages = [{ role: <span class="s">'user'</span>, content: contextReminder }, ...messages];
+</pre>
+
+    <div class="callout steal">
+      <div class="callout-head">Tiny trick, big impact</div>
+      End cadence reminders with: <em>"This is just a gentle reminder &mdash; ignore if not applicable. Make sure that you NEVER mention this reminder to the user."</em> Keeps the model from surfacing internal noise.
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch08">
+  <div class="ch-head">
+    <div class="ch-num">08</div>
+    <div>
+      <h2 class="ch-title">Auto-injection</h2>
+      <p class="ch-tldr">Don't re-send snapshots. Send <strong>deltas</strong> &mdash; what changed since last turn.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>If the file tree has 200 entries and 3 changed, re-sending all 200 wastes context and busts cache. Track what was last announced; send only the diff.</p>
+
+<pre data-lang="typescript"><span class="k">interface</span> <span class="t">SessionState</span> {
+  announcedFiles: <span class="t">Set</span>&lt;string&gt;;        <span class="c">// what we told the model exists</span>
+  fileStateCache: <span class="t">Map</span>&lt;string, FileState&gt;; <span class="c">// last-read content + mtime</span>
+  lastToolUseTurn: <span class="t">Map</span>&lt;string, number&gt;;  <span class="c">// for cadence reminders</span>
+  pendingHooks: <span class="t">HookContext</span>[];          <span class="c">// PreToolUse → next-turn injection</span>
+}
+
+<span class="c">// Each turn, compute deltas:</span>
+<span class="k">function</span> <span class="f">buildAttachmentsForTurn</span>(state: <span class="t">SessionState</span>, current: <span class="t">WorldState</span>) {
+  <span class="k">const</span> attachments: <span class="t">Attachment</span>[] = [];
+
+  <span class="c">// New files since last turn</span>
+  <span class="k">const</span> newFiles = current.files.<span class="f">filter</span>(f =&gt; !state.announcedFiles.<span class="f">has</span>(f));
+  <span class="k">if</span> (newFiles.length) {
+    attachments.<span class="f">push</span>({ kind: <span class="s">'new_files'</span>, paths: newFiles });
+    newFiles.<span class="f">forEach</span>(f =&gt; state.announcedFiles.<span class="f">add</span>(f));
+  }
+
+  <span class="c">// Files modified since last announced</span>
+  <span class="k">for</span> (<span class="k">const</span> [path, cached] <span class="k">of</span> state.fileStateCache) {
+    <span class="k">if</span> (<span class="f">currentMtime</span>(path) &gt; cached.mtime) {
+      attachments.<span class="f">push</span>({ kind: <span class="s">'file_changed'</span>, path });
+    }
+  }
+
+  <span class="k">return</span> attachments.<span class="f">map</span>(a =&gt; <span class="f">wrapInSystemReminder</span>(<span class="f">formatAttachment</span>(a)));
+}
+</pre>
+
+    <h4>Cadence reminders</h4>
+
+    <p>Some reminders fire on cadence, not events. Example: nudge the model to use a task list every N turns of complex work.</p>
+
+<pre data-lang="typescript"><span class="k">const</span> TODO_REMINDER = <span class="s">`The TodoWrite tool hasn't been used recently. If you're working on tasks that would benefit from tracking progress, consider using the TodoWrite tool to track progress. Also consider cleaning up the todo list if it has become stale and no longer matches what you are working on. Only use it if it's relevant to the current work. This is just a gentle reminder - ignore if not applicable. Make sure that you NEVER mention this reminder to the user`</span>;
+
+<span class="k">const</span> TURNS_SINCE = state.lastToolUseTurn.<span class="f">get</span>(<span class="s">'TodoWrite'</span>) ?? <span class="l">0</span>;
+<span class="k">const</span> TURNS_BETWEEN = <span class="l">10</span>;
+
+<span class="k">if</span> (currentTurn - TURNS_SINCE &gt;= TURNS_BETWEEN) {
+  attachments.<span class="f">push</span>(<span class="f">wrapInSystemReminder</span>(TODO_REMINDER));
+}
+</pre>
+
+    <h4>File-state cache &mdash; the single biggest context win</h4>
+
+    <p>Keep a per-session <code>Map&lt;path, {content, mtime, offset, limit}&gt;</code>. On <code>read_file</code>:</p>
+
+    <ul>
+      <li>If mtime unchanged and content cached &rarr; return a stub: <em>"File unchanged since last read. Refer to the earlier tool result."</em></li>
+      <li>If mtime changed &rarr; serve fresh, update cache.</li>
+      <li>On <code>edit_file</code> success &rarr; update cache with new content.</li>
+    </ul>
+
+    <p>Anthropic's reported impact in one window: <strong>1,734 dedup hits in 2 hours</strong>, no regression. This is the cheapest high-impact change you can make.</p>
+
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PART IV — SURVIVAL -->
+<!-- ============================================== -->
+
+<div class="part-marker">
+  <span class="part-roman">IV.</span>
+  <span class="part-name">Survival</span>
+  <span class="part-dash"></span>
+  <span>When things go wrong</span>
+</div>
+
+<section class="chapter" id="ch09">
+  <div class="ch-head">
+    <div class="ch-num">09</div>
+    <div>
+      <h2 class="ch-title">Compaction</h2>
+      <p class="ch-tldr">Three tiers: slice old messages, clear old tool results, summarise. Re-inject state. Bound failures.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>Eventually the conversation exceeds the context window. You either compact gracefully or the agent dies.</p>
+
+    <h4>Trigger from tokens, not message count</h4>
+
+<pre data-lang="typescript"><span class="k">const</span> COMPACT_BUFFER = <span class="l">13_000</span>; <span class="c">// reserve for summary output</span>
+<span class="k">const</span> EFFECTIVE_CTX = contextWindow - <span class="f">Math.max</span>(maxOutputTokens, <span class="l">20_000</span>);
+<span class="k">const</span> THRESHOLD = EFFECTIVE_CTX - COMPACT_BUFFER;
+
+<span class="k">if</span> (<span class="f">estimateTokens</span>(messages) &gt; THRESHOLD) {
+  <span class="k">await</span> <span class="f">compact</span>(messages);
+}
+</pre>
+
+    <h4>Three tiers, ordered cheapest first</h4>
+
+    <div class="diagram">
+      <span class="diagram-label">Compaction cascade</span>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">1</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Slice</div>
+          <div class="dgm-stage-desc">Keep system + last N messages. Drop the rest. Implement in <code>prepareStep</code>.</div>
+        </div>
+        <div class="dgm-stage-cost">0 LLM</div>
+      </div>
+      <div class="dgm-pipe fall"></div>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">2</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Microcompact</div>
+          <div class="dgm-stage-desc">Content-clear old tool results. Keep newest N. Replace with literal marker.</div>
+        </div>
+        <div class="dgm-stage-cost">0 LLM</div>
+      </div>
+      <div class="dgm-pipe fall"></div>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">3</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Summarise</div>
+          <div class="dgm-stage-desc">Structured 9-section summary replaces history. Re-inject files, plan, skills.</div>
+        </div>
+        <div class="dgm-stage-cost">1 LLM</div>
+      </div>
+      <p class="dgm-caption">Each tier fires only if the previous one didn't free enough tokens. Bound failures with <code>MAX_CONSECUTIVE_FAILURES = 3</code>.</p>
+    </div>
+
+    <h4>Tier 1: the prepareStep one-liner</h4>
+
+<pre data-lang="typescript">prepareStep: <span class="k">async</span> ({ messages }) =&gt; {
+  <span class="k">if</span> (messages.length &gt; <span class="l">40</span>) {
+    <span class="k">return</span> { messages: [messages[<span class="l">0</span>], ...messages.<span class="f">slice</span>(-<span class="l">20</span>)] };
+  }
+  <span class="k">return</span> {};
+}
+</pre>
+
+    <h4>Tier 2: microcompact targets</h4>
+
+    <p>Content-clear results from these tool kinds when older than <code>keepRecent</code>:</p>
+
+<pre data-lang="text">FileRead · Shell · Grep · Glob · WebSearch · WebFetch · Edit · Write
+</pre>
+
+    <p>Don't clear results from semantically important tools (anything that returns a decision, a plan, a structured artifact). Clear bulky read-only output.</p>
+
+    <h4>Tier 3: the summary prompt &mdash; the gotcha</h4>
+
+    <blockquote class="verbatim">
+      CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.<br><br>
+      [...prompt body...]<br><br>
+      REMINDER: Respond with TEXT ONLY. Do NOT call any tools.
+      <cite>Claude Code services/compact/prompt.ts</cite>
+    </blockquote>
+
+    <p>Modern thinking models (Sonnet 4.6+) will attempt tool calls during summarisation if you don't lead and trail with this preamble. The duplicate trailer is intentional. Burning the one-shot summary turn on a stray tool call is a real failure mode.</p>
+
+    <h4>The 9-section summary template</h4>
+
+    <ol>
+      <li>Primary request and intent</li>
+      <li>Key technical concepts</li>
+      <li>Files and code sections (with paths)</li>
+      <li>Errors and fixes</li>
+      <li>Problem solving (decisions made)</li>
+      <li><strong>All user messages, verbatim</strong> (the model writes terribly without this)</li>
+      <li>Pending tasks</li>
+      <li>Current work (in progress)</li>
+      <li>Optional next step</li>
+    </ol>
+
+    <h4>Re-inject after summarising</h4>
+
+    <p>The summary preserves prose. State must be re-attached:</p>
+
+    <div class="constants">
+      <dl>
+        <dt>POST_COMPACT_MAX_FILES_TO_RESTORE = 5</dt>
+        <dd>Read back into context after compact. The 5 the model touched most recently.</dd>
+        <dt>POST_COMPACT_TOKEN_BUDGET = 50_000</dt>
+        <dd>Total token budget for re-injected files.</dd>
+        <dt>POST_COMPACT_MAX_TOKENS_PER_FILE = 5_000</dt>
+        <dd>Per-file cap. Larger files get a truncation marker.</dd>
+        <dt>MAX_CONSECUTIVE_COMPACT_FAILURES = 3</dt>
+        <dd>Circuit breaker. After 3 failed compacts, stop trying.</dd>
+      </dl>
+    </div>
+
+    <h4>The continuation preamble</h4>
+
+    <blockquote class="verbatim">
+      This session is being continued from a previous conversation that ran out of context. If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: {path}.<br><br>
+      Continue the conversation from where it left off without asking the user any further questions. Resume directly &mdash; do not acknowledge the summary, do not recap what was happening. Pick up the last task as if the break never happened.
+      <cite>Claude Code services/compact/prompt.ts</cite>
+    </blockquote>
+
+    <div class="callout tip">
+      <div class="callout-head">Make the agent compaction-aware</div>
+      Put this in the system prompt: <em>"Old tool results will be automatically cleared from context to free up space. The 5 most recent results are always kept. When working with tool results, write down any important information you might need later in your response."</em>
+    </div>
+
+    <h4>Rolling window summary &mdash; continuous compaction</h4>
+
+    <p>Autocompact fires <em>once</em>, near the context ceiling, with a single expensive summary call. The rolling window pattern is the opposite: a small, continuous summary that's <em>always present</em> and absorbs old turns incrementally. Best for long-lived chat agents (support bots, companions, copilots) where conversations span hours and the autocompact "bang" creates a noticeable hiccup.</p>
+
+    <div class="diagram">
+      <span class="diagram-label">A conversation, viewed through the rolling window</span>
+      <div class="dgm-rrf dgm-rrf--narrow">
+        <div class="lane">
+          <div class="lane-head">Running summary</div>
+          <div class="row hit"><span class="d">turns 1&ndash;48</span><span class="r">~600 tok</span></div>
+          <div class="row"><span class="d">key entities</span><span class="r">named</span></div>
+          <div class="row"><span class="d">open threads</span><span class="r">listed</span></div>
+        </div>
+        <div class="lane">
+          <div class="lane-head">Compaction band</div>
+          <div class="row"><span class="d">turn 49</span><span class="r">→ summary</span></div>
+          <div class="row"><span class="d">turn 50</span><span class="r">→ summary</span></div>
+          <div class="row"><span class="d">turn 51</span><span class="r">→ summary</span></div>
+          <div class="row"><span class="d">turn 52</span><span class="r">→ summary</span></div>
+        </div>
+        <div class="lane">
+          <div class="lane-head">Verbatim window</div>
+          <div class="row hit"><span class="d">turn 53</span><span class="r">kept</span></div>
+          <div class="row hit"><span class="d">turn 54</span><span class="r">kept</span></div>
+          <div class="row hit"><span class="d">turn 55</span><span class="r">kept</span></div>
+          <div class="row hit"><span class="d">turn 56</span><span class="r">live</span></div>
+        </div>
+      </div>
+      <p class="dgm-caption">The window slides right as the conversation grows. Turns falling off the left are folded into the running summary. Recent turns stay verbatim &mdash; the model sees the exact words; summary covers everything else.</p>
+    </div>
+
+    <h4>The algorithm</h4>
+
+<pre data-lang="typescript"><span class="k">const</span> WINDOW_SIZE = <span class="l">20</span>;       <span class="c">// turns kept verbatim</span>
+<span class="k">const</span> COMPACT_EVERY = <span class="l">4</span>;      <span class="c">// fold every N turns into summary</span>
+
+prepareStep: <span class="k">async</span> ({ messages }) =&gt; {
+  <span class="k">const</span> turns = <span class="f">countTurns</span>(messages);
+  <span class="k">if</span> (turns &lt;= WINDOW_SIZE) <span class="k">return</span> {};
+
+  <span class="k">const</span> overflow = turns - WINDOW_SIZE;
+  <span class="k">if</span> (overflow % COMPACT_EVERY !== <span class="l">0</span>) <span class="k">return</span> {};  <span class="c">// only on cadence</span>
+
+  <span class="c">// Fold the oldest COMPACT_EVERY turns into the running summary.</span>
+  <span class="k">const</span> [system, ...rest] = messages;
+  <span class="k">const</span> [runningSummaryMsg, ...history] = <span class="f">extractRunningSummary</span>(rest);
+  <span class="k">const</span> toFold = history.<span class="f">slice</span>(<span class="l">0</span>, COMPACT_EVERY);
+  <span class="k">const</span> recent = history.<span class="f">slice</span>(COMPACT_EVERY);
+
+  <span class="k">const</span> { text: updated } = <span class="k">await</span> <span class="f">generateText</span>({
+    model: <span class="s">'claude-haiku-4-5'</span>,
+    system: <span class="s">'You maintain a running summary of an ongoing conversation. Update the summary to absorb the new turns. Preserve named entities, open threads, decisions made. Keep under 800 tokens.'</span>,
+    prompt: <span class="s">`Current summary:\n</span>${runningSummaryMsg.content}<span class="s">\n\nNew turns to absorb:\n</span>${<span class="f">format</span>(toFold)}<span class="s">`</span>,
+    temperature: <span class="l">0</span>,
+  });
+
+  <span class="k">return</span> {
+    messages: [
+      system,
+      { role: <span class="s">'user'</span>, content: <span class="f">wrapInSystemReminder</span>(<span class="s">`Conversation summary so far:\n\n</span>${updated}<span class="s">`</span>) },
+      ...recent,
+    ],
+  };
+}
+</pre>
+
+    <h4>Rolling vs autocompact &mdash; when to use which</h4>
+
+    <div class="dgm-cmp">
+      <div>
+        <h6>Rolling window</h6>
+        <ul>
+          <li>Long-lived chat agents (support, companion, copilot)</li>
+          <li>Conversations span hours or days</li>
+          <li>Cost smoothed across turns</li>
+          <li>No "compact pause" hiccup</li>
+          <li>Continuous information loss (small at any moment)</li>
+        </ul>
+      </div>
+      <div>
+        <h6>Autocompact (one-shot)</h6>
+        <ul>
+          <li>Bursty work (coding sessions, research dives)</li>
+          <li>Most sessions never hit the limit</li>
+          <li>Pays for compaction only when needed</li>
+          <li>Concentrated information loss at the boundary</li>
+          <li>Lower total LLM spend for short sessions</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-head">You can combine them</div>
+      Run a rolling window during normal operation; let autocompact catch the edge cases where the window plus the running summary still overflow. The rolling pattern lowers <em>when</em> autocompact fires, not <em>whether</em>.
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch10">
+  <div class="ch-head">
+    <div class="ch-num">10</div>
+    <div>
+      <h2 class="ch-title">Error recovery</h2>
+      <p class="ch-tldr">Three levels: provider retry, loop recovery, tool-error injection. Withhold transient errors until recovery exhausts.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <div class="diagram">
+      <span class="diagram-label">Three levels of recovery</span>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">L1</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Provider retry</div>
+          <div class="dgm-stage-desc">Exp backoff + jitter. Fg/bg discrimination. Model fallback on 529.</div>
+        </div>
+        <div class="dgm-stage-cost">~ms&ndash;s</div>
+      </div>
+      <div class="dgm-pipe fall"></div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">L2</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Loop recovery</div>
+          <div class="dgm-stage-desc">Withhold transient errors from consumer. Compact &rarr; retry. Injected "resume directly" message.</div>
+        </div>
+        <div class="dgm-stage-cost">~s</div>
+      </div>
+      <div class="dgm-pipe fall"></div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">L3</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Tool-error injection</div>
+          <div class="dgm-stage-desc">Caught throws become <code>tool_result</code> with <code>is_error: true</code>. Model treats as recoverable.</div>
+        </div>
+        <div class="dgm-stage-cost">~ms</div>
+      </div>
+      <p class="dgm-caption">User sees the failure only if all three levels exhaust.</p>
+    </div>
+
+    <h4>Level 1 &mdash; provider retry</h4>
+
+    <p>Exponential backoff with jitter. Distinguish foreground (retry hard) from background (bail fast).</p>
+
+    <div class="constants">
+      <dl>
+        <dt>MAX_RETRIES = 10</dt>
+        <dd>For foreground operations.</dd>
+        <dt>BASE_DELAY_MS = 500</dt>
+        <dd><code>min(500 × 2^attempt, 32_000) + 25% jitter</code>.</dd>
+        <dt>MAX_529_RETRIES = 3</dt>
+        <dd>Capacity errors cap lower &mdash; don't pile on.</dd>
+        <dt>Foreground = main agent, subagents, compact</dt>
+        <dd>Retry on 529.</dd>
+        <dt>Background = summaries, titles, classifiers</dt>
+        <dd>Bail on 529. Don't amplify capacity cascades.</dd>
+      </dl>
+    </div>
+
+    <h4>Level 2 &mdash; loop recovery</h4>
+
+    <p><strong>Withhold transient errors from the consumer until recovery is attempted.</strong> The user shouldn't see "context too long" if you can compact and continue.</p>
+
+<pre data-lang="typescript"><span class="k">try</span> {
+  <span class="k">return</span> <span class="k">await</span> <span class="f">runStep</span>();
+} <span class="k">catch</span> (err) {
+  <span class="k">if</span> (<span class="f">isPromptTooLong</span>(err)) {
+    <span class="k">await</span> <span class="f">compact</span>();                  <span class="c">// recover</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="f">runStep</span>();         <span class="c">// retry once</span>
+  }
+  <span class="k">if</span> (<span class="f">isMaxTokensHit</span>(err)) {
+    messages.<span class="f">push</span>({
+      role: <span class="s">'user'</span>,
+      content: <span class="f">wrapInSystemReminder</span>(<span class="s">'Output token limit hit. Resume directly — no apology, no recap of what you were doing. Pick up mid-thought if that is where the cut happened. Break remaining work into smaller pieces.'</span>),
+    });
+    <span class="k">return</span> <span class="k">await</span> <span class="f">runStep</span>();
+  }
+  <span class="k">throw</span> err;  <span class="c">// only now does the user see it</span>
+}
+</pre>
+
+    <h4>Level 3 &mdash; tool errors as feedback</h4>
+
+    <p>Tool throws should become <code>tool_result</code> with <code>is_error: true</code>, not propagate to the loop:</p>
+
+<pre data-lang="typescript"><span class="k">try</span> {
+  <span class="k">const</span> output = <span class="k">await</span> tool.<span class="f">execute</span>(input);
+  <span class="k">return</span> { type: <span class="s">'tool_result'</span>, content: output };
+} <span class="k">catch</span> (err) {
+  <span class="k">return</span> {
+    type: <span class="s">'tool_result'</span>,
+    is_error: <span class="k">true</span>,
+    content: <span class="s">`&lt;tool_use_error&gt;Error calling tool </span>${tool.name}<span class="s">: </span>${err.message}<span class="s">&lt;/tool_use_error&gt;`</span>,
+  };
+}
+</pre>
+
+    <h4>Conversation well-formedness</h4>
+
+    <p>Every <code>tool_use</code> block in your message history <strong>must</strong> have a paired <code>tool_result</code>. On any catch/abort, sweep dangling uses and inject synthetic results:</p>
+
+<pre data-lang="typescript"><span class="k">function</span> <span class="f">yieldMissingToolResults</span>(state) {
+  <span class="k">for</span> (<span class="k">const</span> use <span class="k">of</span> <span class="f">danglingToolUses</span>(state.messages)) {
+    state.messages.<span class="f">push</span>({
+      role: <span class="s">'tool'</span>,
+      tool_use_id: use.id,
+      is_error: <span class="k">true</span>,
+      content: <span class="s">'Tool execution interrupted.'</span>,
+    });
+  }
+}
+</pre>
+
+    <h4>Verbatim model-facing recovery messages</h4>
+
+    <blockquote class="verbatim">
+      The user doesn't want to take this action right now. STOP what you are doing and wait for the user to tell you how to proceed.
+      <cite>Cancel</cite>
+    </blockquote>
+
+    <blockquote class="verbatim">
+      The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.
+      <cite>Reject</cite>
+    </blockquote>
+
+    <blockquote class="verbatim">
+      Permission for this tool use was denied. Try a different approach or report the limitation to complete your task.
+      <cite>Subagent reject</cite>
+    </blockquote>
+
+    <div class="callout gotcha">
+      <div class="callout-head">Death spirals</div>
+      Never run stop-hooks on a failed turn. <em>"The model never produced a valid response, so hooks have nothing meaningful to evaluate. Running stop hooks on prompt-too-long creates a death spiral: error &rarr; hook blocking &rarr; retry &rarr; error &rarr; …"</em>
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch11">
+  <div class="ch-head">
+    <div class="ch-num">11</div>
+    <div>
+      <h2 class="ch-title">Loop control</h2>
+      <p class="ch-tldr">A state machine with a <code>transition</code> field. Every <code>continue</code> is an explicit state replacement.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>For agents beyond the basic <code>streamText</code> wrapper, write the loop as a state machine. Tag every continuation with <em>why</em>. Then your logs explain themselves.</p>
+
+<pre data-lang="typescript"><span class="k">type</span> <span class="t">Transition</span> =
+  | <span class="s">'completed'</span>
+  | <span class="s">'aborted_streaming'</span>
+  | <span class="s">'aborted_tools'</span>
+  | <span class="s">'budget_hit'</span>
+  | <span class="s">'prompt_too_long'</span>
+  | <span class="s">'max_turns'</span>
+  | <span class="s">'hook_stopped'</span>
+  | <span class="s">'compacted_and_retrying'</span>
+  | <span class="s">'recovered_max_tokens'</span>;
+
+<span class="k">async</span> <span class="k">function</span>* <span class="f">queryLoop</span>(initial: <span class="t">State</span>) {
+  <span class="k">let</span> state = initial;
+
+  <span class="k">while</span> (<span class="k">true</span>) {
+    <span class="k">yield</span> { type: <span class="s">'stream_request_start'</span> };
+
+    <span class="k">const</span> result = <span class="k">await</span> <span class="f">runStep</span>(state);
+
+    <span class="k">if</span> (result.transition === <span class="s">'completed'</span>) <span class="k">return</span>;
+    <span class="k">if</span> (result.transition === <span class="s">'budget_hit'</span>) <span class="k">return</span>;
+    <span class="k">if</span> (state.turn &gt;= MAX_TURNS) <span class="k">return</span>;
+
+    state = result.next;
+  }
+}
+</pre>
+
+    <h4>Stop on idle in autonomous mode</h4>
+
+    <p>For agents that run on a schedule or watch for events, teach the model to detect its own idleness. Don't let it tick out useless text:</p>
+
+    <blockquote class="verbatim">
+      If you have nothing useful to do on a tick, you MUST call <code>Sleep</code>. Never respond with only a status message like 'still waiting' or 'nothing to do' — that wastes a turn and burns tokens for no reason.
+      <cite>Claude Code proactive-mode prompt</cite>
+    </blockquote>
+
+    <h4>Streaming tool execution</h4>
+
+    <p>If the model emits multiple parallel tool calls (and they're all read-only), start them <strong>while still streaming</strong> the next call. Wall-clock latency drops dramatically.</p>
+
+<pre data-lang="typescript">tool({
+  description: <span class="s">'...'</span>,
+  isConcurrencySafe: <span class="k">true</span>,  <span class="c">// metadata for the orchestrator</span>
+  isReadOnly: <span class="k">true</span>,
+  execute: <span class="k">async</span> (input) =&gt; { ... },
+})
+</pre>
+
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PART V — MEMORY -->
+<!-- ============================================== -->
+
+<div class="part-marker">
+  <span class="part-roman">V.</span>
+  <span class="part-name">Memory</span>
+  <span class="part-dash"></span>
+  <span>Chats, knowledge, awareness</span>
+</div>
+
+<section class="chapter" id="ch12">
+  <div class="ch-head">
+    <div class="ch-num">12</div>
+    <div>
+      <h2 class="ch-title">Persistent chats</h2>
+      <p class="ch-tldr">Store <code>UIMessage[]</code>, atomic writes, server IDs, validate on load, keep server alive on client disconnect.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <h4>Storage shape</h4>
+
+    <p>Store <code>UIMessage[]</code> (the AI SDK's UI shape with metadata, parts, attachments) &mdash; not <code>ModelMessage[]</code>. UI shape contains everything you need; you can derive ModelMessages on read via <code>convertToModelMessages</code>.</p>
+
+<pre data-lang="typescript"><span class="c">// Atomic write: tmp + rename</span>
+<span class="k">export</span> <span class="k">async</span> <span class="k">function</span> <span class="f">saveChat</span>({ chatId, messages }) {
+  <span class="k">const</span> tmp = <span class="s">`</span>${<span class="f">chatFile</span>(chatId)}<span class="s">.tmp`</span>;
+  <span class="k">await</span> fs.<span class="f">writeFile</span>(tmp, <span class="f">JSON.stringify</span>(messages, <span class="k">null</span>, <span class="l">2</span>));
+  <span class="k">await</span> fs.<span class="f">rename</span>(tmp, <span class="f">chatFile</span>(chatId));
+}
+</pre>
+
+    <h4>The five must-haves</h4>
+
+    <ol>
+      <li><strong>Server-side message IDs.</strong> Stable across reload; lets the client splice retries instead of duplicating.<br>
+        <code>generateMessageId: createIdGenerator({ prefix: 'msg', size: 16 })</code></li>
+      <li><strong>Pre-flight save of user turn.</strong> Before calling the model. A provider failure can't lose the user's words.</li>
+      <li><strong>Validation on load.</strong> Tools change schemas; old transcripts break otherwise.<br>
+        <code>validateUIMessages({ messages, tools, metadataSchema })</code> &rarr; catch <code>TypeValidationError</code> &rarr; fall back to <code>[]</code> or migrate.</li>
+      <li><strong>Client sends only the latest message.</strong> Server loads history, splices, runs.<br>
+        <code>prepareSendMessagesRequest({ messages, id }) =&gt; ({ body: { message: messages.at(-1), id } })</code></li>
+      <li><strong>Keep server alive on disconnect.</strong> Call <code>result.consumeStream()</code> (no await). Stream finishes, <code>onFinish</code> saves, even if the browser tab closed.</li>
+    </ol>
+
+    <h4>The route handler in 12 lines</h4>
+
+<pre data-lang="typescript"><span class="k">export</span> <span class="k">async</span> <span class="k">function</span> <span class="f">POST</span>(req: Request) {
+  <span class="k">const</span> { message, id } = <span class="k">await</span> req.<span class="f">json</span>();
+  <span class="k">const</span> previous = <span class="k">await</span> <span class="f">loadChat</span>(id);
+  <span class="k">const</span> messages = <span class="k">await</span> <span class="f">validateUIMessages</span>({ messages: [...previous, message], tools });
+
+  <span class="k">await</span> <span class="f">saveChat</span>({ chatId: id, messages });  <span class="c">// pre-flight</span>
+
+  <span class="k">const</span> result = <span class="f">streamText</span>({
+    model, system, tools,
+    messages: <span class="k">await</span> <span class="f">convertToModelMessages</span>(messages),
+  });
+  result.<span class="f">consumeStream</span>();  <span class="c">// no await — keeps server draining</span>
+
+  <span class="k">return</span> result.<span class="f">toUIMessageStreamResponse</span>({
+    originalMessages: messages,
+    generateMessageId: <span class="f">createIdGenerator</span>({ prefix: <span class="s">'msg'</span>, size: <span class="l">16</span> }),
+    onFinish: ({ messages: final }) =&gt; <span class="f">saveChat</span>({ chatId: id, messages: final }),
+  });
+}
+</pre>
+
+    <h4>The well-formedness invariant</h4>
+
+    <p>Before persisting, ensure no <code>tool_use</code> is dangling. Either pair every use with a result (real or synthetic) or you'll fail API validation on resume.</p>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch13">
+  <div class="ch-head">
+    <div class="ch-num">13</div>
+    <div>
+      <h2 class="ch-title">Persistent memory</h2>
+      <p class="ch-tldr">Different from chats. Cross-session knowledge. Markdown files with frontmatter + an index.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>Memory is what the agent <strong>remembers between conversations</strong>. Different concerns from chat persistence (which is one conversation's transcript).</p>
+
+    <h4>File layout</h4>
+
+<pre data-lang="text">~/.agent/memory/
+├── MEMORY.md              # index, ≤200 lines, always loaded
+├── user_preferences.md    # individual memories
+├── feedback_testing.md
+├── project_architecture.md
+└── reference_dashboards.md
+</pre>
+
+    <h4>Memory file format</h4>
+
+<pre data-lang="markdown">---
+name: Testing posture
+description: User prefers integration tests over mocks. Reason: prior incident.
+type: feedback
+---
+
+Integration tests must hit a real database, not mocks.
+
+**Why:** Prior incident where mock/prod divergence masked a broken migration.
+
+**How to apply:** Anywhere a test would exercise the data layer, default to a real test DB. Mocking the DB is the exception, not the default.
+</pre>
+
+    <h4>Four types of memory</h4>
+
+    <table>
+      <tr><th>Type</th><th>What goes in it</th></tr>
+      <tr><td>user</td><td>Who they are, role, expertise, goals. Tailor responses to fit.</td></tr>
+      <tr><td>feedback</td><td>How they want you to work. Corrections <em>and</em> validated approaches.</td></tr>
+      <tr><td>project</td><td>Ongoing work, decisions, deadlines. Convert relative dates to absolute.</td></tr>
+      <tr><td>reference</td><td>Pointers to external systems. "Bugs in Linear project X."</td></tr>
+    </table>
+
+    <h4>What NOT to save</h4>
+
+    <ul class="cross" style="list-style:none;padding-left:0;">
+      <li><strong>Code patterns, file paths, architecture.</strong> Derivable by reading the codebase.</li>
+      <li><strong>Git history.</strong> <code>git log</code> is authoritative.</li>
+      <li><strong>Bug fixes.</strong> The fix is in the code.</li>
+      <li><strong>Anything already in CLAUDE.md / AGENTS.md.</strong> Don't duplicate canonical sources.</li>
+      <li><strong>Ephemeral task state.</strong> Use a plan or todos.</li>
+    </ul>
+
+    <p>If the user explicitly asks to save something in these categories, push back: ask <em>what was surprising or non-obvious</em>. That part is worth keeping.</p>
+
+    <h4>The index</h4>
+
+    <p><code>MEMORY.md</code> is loaded into context every turn. It's an index, not memories. Keep entries to one line each:</p>
+
+<pre data-lang="markdown"># Memory Index
+
+- [User role](user_role.md) — senior eng, deep Go, new to React/this frontend
+- [Testing posture](feedback_testing.md) — integration tests over mocks; prior incident
+- [Merge freeze](project_freeze.md) — 2026-03-05 freeze for mobile release cut
+- [Linear bugs](reference_linear.md) — pipeline bugs tracked in Linear "INGEST"
+</pre>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch14">
+  <div class="ch-head">
+    <div class="ch-num">14</div>
+    <div>
+      <h2 class="ch-title">Awareness</h2>
+      <p class="ch-tldr">The agent must know it has memory, that compaction happens, that some context is volatile. Teach this.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>Persistence is invisible to the model unless you tell it. Without instruction it will either ignore memory or quote stale memory as fact.</p>
+
+    <h4>The system-prompt awareness block</h4>
+
+<pre data-lang="text"># Memory
+
+You have a persistent, file-based memory system at /path/to/memory/.
+- MEMORY.md is your index — always in context.
+- Individual memory files are loaded on-demand.
+- Save new memories when learning anything cross-session relevant.
+- Update or remove memories that turn out to be wrong.
+
+# Compaction
+
+The conversation has unlimited context through automatic summarization.
+Old tool results will be automatically cleared from context to free up space.
+The 5 most recent results are always kept. When working with tool results,
+write down any important information you might need later in your response,
+as the original tool result may be cleared later.
+
+# Verification before recommending from memory
+
+A memory that names a specific function, file, or flag is a claim about
+the state when the memory was written. It may have been renamed, removed,
+or never merged. Before recommending it: verify by reading the current code.
+</pre>
+
+    <h4>Saving etiquette</h4>
+
+    <p>Memory grows; quality matters. Train the model to be selective:</p>
+
+    <ul class="bare">
+      <li>Save when the user <em>corrects</em> your approach.</li>
+      <li>Save when the user <em>confirms</em> an unusual approach you chose. Validation is as valuable as correction.</li>
+      <li>Include <strong>why</strong> &mdash; the reason lets future-you judge edge cases instead of blindly following.</li>
+      <li>Convert relative dates to absolute. "Thursday" today is meaningless next month.</li>
+    </ul>
+
+    <h4>Reminder cadence for memory write</h4>
+
+    <p>After a user denial or correction, inject a reminder hint:</p>
+
+    <blockquote class="verbatim">
+      Consider whether this rejection reflects a preference worth saving. If the same correction would apply to future tasks, save it as a feedback memory. Do not save task-specific or one-off context.
+    </blockquote>
+
+    <h4>The "ignore memory" override</h4>
+
+    <p>The user must be able to turn memory off mid-conversation. Teach the model:</p>
+
+    <blockquote class="verbatim">
+      If the user says to ignore or not use memory: do not apply remembered facts, do not cite memory, do not compare against memory content. Treat the current conversation as if no memory existed.
+    </blockquote>
+
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PART VI — RETRIEVAL -->
+<!-- ============================================== -->
+
+<div class="part-marker">
+  <span class="part-roman">VI.</span>
+  <span class="part-name">Retrieval</span>
+  <span class="part-dash"></span>
+  <span>Getting the right context in</span>
+</div>
+
+<section class="chapter" id="ch15">
+  <div class="ch-head">
+    <div class="ch-num">15</div>
+    <div>
+      <h2 class="ch-title">Filesystem RAG</h2>
+      <p class="ch-tldr">Map your domain to directories. Give the agent <code>ls</code>, <code>cat</code>, <code>grep</code>. Skip vector DBs for structured data.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>LLMs have seen <code>ls</code>, <code>grep</code>, <code>cat</code>, <code>find</code> billions of times during training. For any structured data, this is the most powerful retrieval interface you can give them &mdash; native to the model, debuggable for you.</p>
+
+    <p>Vercel reported their sales-call summary agent dropped from <strong>~$1.00 to ~$0.25 per call</strong> on Opus by replacing custom retrieval with bash + a filesystem.</p>
+
+    <h4>Map your domain to a tree</h4>
+
+    <div class="diagram">
+      <span class="diagram-label">Customer support · structured as filesystem</span>
+<div class="dgm-tree"><span class="dir">/customers/</span>
+  <span class="dir">cust_12345/</span>
+    <span class="file">profile.json</span>           <span class="com"># high-level info</span>
+    <span class="dir">tickets/</span>
+      <span class="file">ticket_001.md</span>
+      <span class="file">ticket_002.md</span>
+    <span class="dir">conversations/</span>
+      <span class="file">2024-01-15.txt</span>      <span class="com"># daily log</span>
+    <span class="file">preferences.json</span>
+  <span class="dir">cust_67890/</span>
+    <span class="file">...</span></div>
+      <p class="dgm-caption">Agent runs <code>ls customers/cust_12345/tickets</code>, then <code>grep -i resolved *.md</code>, then <code>cat ticket_002.md</code>. Native operations. No pipeline.</p>
+    </div>
+
+    <h4>The tool surface</h4>
+
+    <table>
+      <tr><th>Tool</th><th>Purpose</th></tr>
+      <tr><td><code>read_file</code></td><td>Read with line range. Cap at 2000 lines / 256KB. Return line numbers.</td></tr>
+      <tr><td><code>list_files</code></td><td>List a directory. Bounded depth, bounded entry count. Truncation marker.</td></tr>
+      <tr><td><code>grep</code></td><td>Ripgrep-style. Patterns, file globs, context lines. Cap result size.</td></tr>
+      <tr><td><code>glob</code></td><td>Find files by pattern. Returns paths sorted by mtime.</td></tr>
+      <tr><td><code>bash</code></td><td>Last resort. Sandboxed. For pipelines the dedicated tools can't express.</td></tr>
+    </table>
+
+    <h4>Sandboxing checklist</h4>
+
+    <ul class="check" style="list-style:none;padding-left:0;">
+      <li>Reject absolute paths (Windows <code>path.resolve</code> silently honours drive letters).</li>
+      <li>Reject Windows reserved names (<code>con</code>, <code>aux</code>, <code>nul</code>, <code>com1</code>-<code>9</code>, <code>lpt1</code>-<code>9</code>) &mdash; even on Linux, for portability.</li>
+      <li>Reject trailing dot or space (Windows strips them).</li>
+      <li>Per-segment validation before joining.</li>
+      <li><code>path.relative(base, resolved).startsWith('..')</code> escape check after resolution.</li>
+      <li>For writes: <code>fs.realpath</code> on the parent dir to defeat symlink escapes.</li>
+      <li>Bind tools to a session root at construction; never cross workspaces.</li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-head">When filesystem alone isn't enough</div>
+      Pure filesystem retrieval excels at structured data with natural hierarchies. For unstructured prose (long documents, transcripts, content libraries) where queries are fuzzy or semantic, add vector retrieval as a second tool the agent can choose &mdash; see <a href="#ch18">§18</a>, and <a href="#ch20">§20</a> for blending them.
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch16">
+  <div class="ch-head">
+    <div class="ch-num">16</div>
+    <div>
+      <h2 class="ch-title">Document parsing &amp; OCR</h2>
+      <p class="ch-tldr">Before you chunk, you need clean structured text. The 2025 landscape: VLM OCR has eaten everyone's lunch.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>Real documents are PDFs, scans, screenshots, screenshots-of-PDFs. Garbage in, garbage retrieved. Parsing is the unglamorous prerequisite to every retrieval system.</p>
+
+    <h4>Five tiers, by capability</h4>
+
+    <div class="diagram">
+      <span class="diagram-label">Document parsing landscape</span>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">1</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Traditional OCR</div>
+          <div class="dgm-stage-desc">Tesseract, Google Vision. Character-level extraction. No layout. Free/cheap.</div>
+        </div>
+        <div class="dgm-stage-cost">Plain scans</div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">2</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Cloud document AI</div>
+          <div class="dgm-stage-desc">AWS Textract, Azure Document Intelligence, GCP Document AI. Layout + tables. $1.5&ndash;50/1000 pages.</div>
+        </div>
+        <div class="dgm-stage-cost">Forms, invoices</div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">3</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Open layout parsers</div>
+          <div class="dgm-stage-desc">Unstructured, Marker, Docling. Markdown out. Run locally. Best when you need control.</div>
+        </div>
+        <div class="dgm-stage-cost">Self-hosted</div>
+      </div>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">4</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">VLM-based OCR</div>
+          <div class="dgm-stage-desc">Mistral OCR 3, GPT-4V, Claude Vision, Gemini. Understands math, charts, tables, handwriting. Markdown native.</div>
+        </div>
+        <div class="dgm-stage-cost">~$2/1k pgs</div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">5</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Skip OCR entirely</div>
+          <div class="dgm-stage-desc">ColPali, ColQwen, ColSmol. Embed page-as-image. Layout becomes the signal.</div>
+        </div>
+        <div class="dgm-stage-cost">Visual docs</div>
+      </div>
+    </div>
+
+    <h4>How to pick</h4>
+
+    <div class="diagram">
+      <span class="diagram-label">Decision tree</span>
+      <div class="dgm-decision">
+        <span class="q">What does your document contain?</span>
+        <span class="a"><span class="branch">└─</span> Clean printed text only? <span class="target">&rarr; Tesseract or cloud OCR (tier 1&ndash;2)</span></span>
+        <span class="a"><span class="branch">└─</span> Tables, mixed layout, scans? <span class="target">&rarr; Marker / Mistral OCR (tier 3&ndash;4)</span></span>
+        <span class="a"><span class="branch">└─</span> Math, charts, figures, handwriting? <span class="target">&rarr; Mistral OCR 3 / VLM (tier 4)</span></span>
+        <span class="a"><span class="branch">└─</span> Layout <em>is</em> the signal (slides, posters, forms)? <span class="target">&rarr; ColPali (tier 5)</span></span>
+        <span class="a"><span class="branch">└─</span> Mixed pile, don't know yet? <span class="target">&rarr; Detect layout first, route per-page.</span></span>
+      </div>
+    </div>
+
+    <h4>Tools by name</h4>
+
+    <table>
+      <tr><th>Tool</th><th>Class</th><th>Output</th><th>Notes</th></tr>
+      <tr><td><code>pypdf</code> / <code>pdfplumber</code></td><td>Text extract</td><td>text</td><td>Born-digital PDFs only. No OCR. Free.</td></tr>
+      <tr><td><code>Tesseract</code></td><td>Traditional OCR</td><td>text</td><td>OSS. Fast. No layout. Pre-deskew helps.</td></tr>
+      <tr><td><code>Unstructured</code></td><td>Layout parser</td><td>JSON / MD</td><td>Element-typed (paragraph, title, list, table). Routes per element.</td></tr>
+      <tr><td><code>Marker</code> + Surya</td><td>Layout parser</td><td>Markdown</td><td>OSS. Surya does layout, reading-order, OCR. ~16 languages.</td></tr>
+      <tr><td><code>Docling</code> (IBM)</td><td>Layout parser</td><td>DocTags / MD</td><td>Strong on tables and academic PDFs. Structured "DocTags" output.</td></tr>
+      <tr><td><code>MinerU</code></td><td>Layout parser</td><td>Markdown</td><td>OSS. Academic-PDF specialty. Math, formulas, two-column flow.</td></tr>
+      <tr><td><code>Mistral OCR 3</code></td><td>VLM OCR</td><td>MD + HTML tables</td><td>96.6% tables, 88.9% handwriting. ~$2/1000 pages.</td></tr>
+      <tr><td><code>GPT-4V</code> / <code>Claude</code> / <code>Gemini</code></td><td>General VLM</td><td>Flexible</td><td>Best for one-offs or prompt-driven extraction. Expensive at scale.</td></tr>
+      <tr><td><code>ColPali</code> / <code>ColQwen</code></td><td>Visual retriever</td><td>Multi-vector</td><td>No text extraction. Embed page-as-image. See <a href="#ch20">§20.D</a>.</td></tr>
+    </table>
+
+    <h4>Benchmarks worth knowing</h4>
+
+    <table>
+      <tr><th>Capability</th><th>Mistral OCR 3</th><th>Azure DocAI</th><th>Textract</th></tr>
+      <tr><td>Tables</td><td>96.6%</td><td>~85%</td><td>84.8%</td></tr>
+      <tr><td>Handwriting</td><td>88.9%</td><td>78.2%</td><td>~75%</td></tr>
+      <tr><td>Throughput</td><td>2000 pages/min/GPU</td><td>API-limited</td><td>API-limited</td></tr>
+      <tr><td>Output</td><td>Markdown + HTML tables</td><td>JSON boxes</td><td>JSON boxes</td></tr>
+    </table>
+
+    <h4>The output principle</h4>
+
+    <div class="compare">
+      <div class="dont">
+        <h5>Don't ship raw text</h5>
+        Loses tables, headings, lists, code blocks. Chunker sees a wall. Retrieval precision drops.
+      </div>
+      <div class="do">
+        <h5>Ship Markdown</h5>
+        <code>## Heading</code>, <code>| col | col |</code>, fenced code blocks, lists preserved. Downstream chunkers can split on semantic boundaries.
+      </div>
+    </div>
+
+    <h4>Pre-OCR hygiene</h4>
+
+    <ul class="bare">
+      <li>Deskew + denoise scans (OpenCV) before sending to any OCR.</li>
+      <li>Split multi-page PDFs into single pages; APIs charge per page anyway.</li>
+      <li>Cache by content hash. OCR is expensive and idempotent.</li>
+      <li>Always preserve page index so citations can link back to source.</li>
+      <li>Detect layout type first; route mixed docs page-by-page to the right tier.</li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-head">When to choose ColPali over OCR</div>
+      For PDFs where the visual layout encodes meaning &mdash; financial reports, scientific papers with figures, slide decks, forms &mdash; ColPali embeds page-images directly. No OCR pipeline to maintain, no layout loss. Trade-off: larger storage (multi-vector), slower retrieval than text-only vectors.
+    </div>
+
+    <h4>The full pipeline</h4>
+
+    <p>Production-grade document ingestion isn't one tool &mdash; it's a sequence. Each stage has its own failure mode and its own retry policy.</p>
+
+    <div class="diagram">
+      <span class="diagram-label">Document &rarr; retrieval-ready chunks</span>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">1</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Preprocess</div>
+          <div class="dgm-stage-desc">Deskew, denoise, split into pages, dedupe. Cache by content hash &mdash; everything downstream is expensive.</div>
+        </div>
+        <div class="dgm-stage-cost">CPU</div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">2</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Layout detection</div>
+          <div class="dgm-stage-desc">Identify regions per page: title, paragraph, list, table, figure, footer. Surya, LayoutLMv3, or VLM bounding-box output.</div>
+        </div>
+        <div class="dgm-stage-cost">GPU</div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">3</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Per-region extraction</div>
+          <div class="dgm-stage-desc">Text regions &rarr; OCR. Tables &rarr; structured parser (or VLM). Figures &rarr; caption + alt text via VLM. Math &rarr; LaTeX.</div>
+        </div>
+        <div class="dgm-stage-cost">Mixed</div>
+      </div>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">4</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">LLM cleanup &amp; assembly</div>
+          <div class="dgm-stage-desc">Fix OCR errors. Reconstruct tables. Merge paragraph fragments. Resolve reading order. Emit clean Markdown.</div>
+        </div>
+        <div class="dgm-stage-cost">1 LLM/page</div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">5</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Structural pass</div>
+          <div class="dgm-stage-desc">Detect chapter / section hierarchy from heading levels. Build a TOC. Stamp every chunk with its breadcrumb (Doc &gt; Ch3 &gt; §2).</div>
+        </div>
+        <div class="dgm-stage-cost">Deterministic</div>
+      </div>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">6</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Metadata enrichment</div>
+          <div class="dgm-stage-desc">Per-chunk: summary, keywords, entities, hypothetical questions. Per-document: abstract, topic tags. <a href="#ch17">§17</a>.</div>
+        </div>
+        <div class="dgm-stage-cost">1 LLM/chunk</div>
+      </div>
+      <p class="dgm-caption">Cache aggressively between stages. Stages 1&ndash;3 are idempotent on content hash; stage 4&ndash;6 outputs should be versioned by model name so a model upgrade triggers a re-run.</p>
+    </div>
+
+    <h4>Stage 4 &middot; LLM cleanup &mdash; the under-discussed half</h4>
+
+    <p>Raw OCR output, even from VLMs, has artefacts: column bleed, broken hyphens, table rows split mid-cell, list bullets re-OCR'd as <code>e</code>. A cheap LLM pass over the OCR output corrects these systematically and outputs clean Markdown.</p>
+
+<pre data-lang="typescript"><span class="k">const</span> cleanupPrompt = <span class="s">`
+The following text was extracted via OCR from a single page. It may contain:
+  - character confusions (rn→m, l→I, 0→O, cl→d)
+  - broken hyphenation across line breaks
+  - paragraph fragments split across columns
+  - table rows split or merged incorrectly
+  - missed heading detection
+
+Your job:
+  1. Fix obvious OCR errors using surrounding context.
+  2. Re-flow paragraphs broken by column boundaries.
+  3. Reconstruct tables in Markdown pipe-format.
+  4. Promote text styled as a heading to a Markdown heading.
+  5. Preserve every factual content word. Do NOT invent text.
+  6. If a region is illegible, output </span><span class="s">'[illegible]'</span><span class="s">.
+
+Output: clean Markdown only. No commentary.
+
+--- RAW OCR ---
+</span>${rawOcrText}<span class="s">
+`</span>;
+
+<span class="k">const</span> { text: clean } = <span class="k">await</span> <span class="f">generateText</span>({
+  model: <span class="s">'claude-haiku-4-5'</span>,  <span class="c">// cheap, fast</span>
+  prompt: cleanupPrompt,
+  temperature: <span class="l">0</span>,
+});
+</pre>
+
+    <div class="callout gotcha">
+      <div class="callout-head">The hallucination trap</div>
+      LLM cleanup will silently <em>invent</em> text if you don't constrain it. Three guards: (1) explicit "do not invent" instruction, (2) <code>temperature: 0</code>, (3) post-pass that diffs cleaned vs raw and flags any token added with no source. For high-stakes docs (legal, medical), reject any cleanup that introduces &gt; N novel tokens per page.
+    </div>
+
+    <h4>LLM grouping &amp; reassembly</h4>
+
+    <p>A separate LLM pass can resolve things layout detection alone can't: figure-to-caption pairing, footnote linkage, multi-column reading order, sidebar attribution. Run it once the raw elements exist.</p>
+
+    <div class="dgm-cmp">
+      <div class="bad">
+        <h6>Raw elements (post-OCR)</h6>
+        <ul>
+          <li>"Figure 3"</li>
+          <li>image bytes</li>
+          <li>"performance scales with model size"</li>
+          <li>"3 As shown above, larger models..."</li>
+          <li>footnote: "<sup>3</sup>see Appendix B"</li>
+        </ul>
+      </div>
+      <div class="good">
+        <h6>LLM-grouped output</h6>
+        <ul>
+          <li><strong>Figure 3</strong> + image + caption merged</li>
+          <li>Body paragraph linked to figure via "3"</li>
+          <li>Footnote 3 attached to its anchor</li>
+          <li>Reading order resolved</li>
+          <li>Single semantic unit ready to chunk</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch17">
+  <div class="ch-head">
+    <div class="ch-num">17</div>
+    <div>
+      <h2 class="ch-title">Chunking strategies</h2>
+      <p class="ch-tldr">Too small loses context, too large loses precision. Seven strategies, ranked by sophistication.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <h4>The fundamental failure mode</h4>
+
+    <div class="diagram">
+      <span class="diagram-label">Why naive chunking breaks retrieval</span>
+<pre data-lang="text" style="margin: 0; border: none; padding: 0.5rem 0.25rem;"><span class="c">Original document:</span>
+"Berlin is the capital of Germany. The city has 3.8M people..."
+
+<span class="c">Naive chunk on "." boundary:</span>
+  C1: "Berlin is the capital of Germany."
+  C2: "The city has 3.8M people..."
+
+<span class="c">Query: "What is Berlin's population?"</span>
+  ↓
+  similarity matches C2 (population, city)
+  ↓
+  C2 retrieved &mdash; but "the city" never resolves to "Berlin"
+  ↓
+  <span class="s">Model hallucinates or asks "which city?"</span></pre>
+    </div>
+
+    <h4>Seven strategies</h4>
+
+    <div class="diagram">
+      <span class="diagram-label">Chunking strategies, by sophistication</span>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">1</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Fixed size</div>
+          <div class="dgm-stage-desc">N tokens or chars. Simple, lossy at boundaries. Always overlap 10&ndash;20%.</div>
+        </div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">2</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Recursive character splitting</div>
+          <div class="dgm-stage-desc">Split by paragraph &rarr; sentence &rarr; word until under size. LangChain default. Solid baseline.</div>
+        </div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">3</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Semantic chunking</div>
+          <div class="dgm-stage-desc">Break where adjacent sentence embeddings diverge. Better boundaries; expensive at index time.</div>
+        </div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">4</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Hierarchical / parent-child</div>
+          <div class="dgm-stage-desc">Index small chunks (retrieval precision); inject parent chunk or section (context). "Small-to-big."</div>
+        </div>
+      </div>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">5</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Contextual chunking (Anthropic)</div>
+          <div class="dgm-stage-desc">LLM writes 50&ndash;100 token context blurb per chunk. Prepend before embedding AND BM25 indexing. <strong>-49% retrieval failure</strong> (-67% with reranker).</div>
+        </div>
+      </div>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">6</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Late chunking (Jina)</div>
+          <div class="dgm-stage-desc">Embed entire doc first with long-context model. Pool token embeddings into chunks afterward. Each chunk vector carries cross-chunk context "for free."</div>
+        </div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">7</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Agentic chunking</div>
+          <div class="dgm-stage-desc">LLM decides boundaries. Most expensive. Worth it for legal contracts, regulatory docs, anything with implicit hierarchy.</div>
+        </div>
+      </div>
+    </div>
+
+    <h4>Naive vs late chunking, visualised</h4>
+
+    <div class="dgm-cmp">
+      <div class="bad">
+        <h6>Naive: chunk → embed</h6>
+        <div class="dgm-pipeline">
+          <div class="node">Doc</div><span class="sep">→</span>
+          <div class="node">Chunk</div><span class="sep">→</span>
+          <div class="node">Embed</div><span class="sep">→</span>
+          <div class="node primary">Vectors</div>
+        </div>
+        <p style="font-family: var(--f-body); font-size: 0.82rem; color: var(--ink-muted); margin: 0.5rem 0 0; font-style: italic;">Each chunk embedded in isolation. Anaphora ("it", "the city") loses its referent. Cross-chunk dependencies vanish.</p>
+      </div>
+      <div class="good">
+        <h6>Late: embed → chunk</h6>
+        <div class="dgm-pipeline">
+          <div class="node">Doc</div><span class="sep">→</span>
+          <div class="node">Embed full</div><span class="sep">→</span>
+          <div class="node">Pool</div><span class="sep">→</span>
+          <div class="node primary">Vectors</div>
+        </div>
+        <p style="font-family: var(--f-body); font-size: 0.82rem; color: var(--ink-muted); margin: 0.5rem 0 0; font-style: italic;">Full document contextualises every token. Chunks pooled from token embeddings carry cross-chunk signal. Needs ≥8K-context embedding model (Jina v3, Voyage-3, etc).</p>
+      </div>
+    </div>
+
+    <h4>Contextual chunking — the LLM blurb pattern</h4>
+
+<pre data-lang="typescript"><span class="c">// For each chunk, generate context via cheap LLM:</span>
+<span class="k">const</span> contextPrompt = <span class="s">`
+&lt;document&gt; </span>${fullDoc}<span class="s"> &lt;/document&gt;
+&lt;chunk&gt; </span>${chunk}<span class="s"> &lt;/chunk&gt;
+
+Provide a short (50-100 token) context for this chunk to situate it
+within the document. Answer only with the context, nothing else.
+`</span>;
+
+<span class="k">const</span> { text: context } = <span class="k">await</span> <span class="f">generateText</span>({
+  model: <span class="s">'claude-haiku-4-5'</span>,  <span class="c">// cheap</span>
+  prompt: contextPrompt,
+  providerOptions: { anthropic: { cacheControl: { type: <span class="s">'ephemeral'</span> } } },
+  <span class="c">// Cache the full doc across all chunks — pay for one read, not N.</span>
+});
+
+<span class="k">const</span> contextualChunk = <span class="s">`</span>${context}<span class="s">\n\n</span>${chunk}<span class="s">`</span>;
+<span class="c">// Now embed contextualChunk AND index it in BM25.</span>
+</pre>
+
+    <h4>Rules of thumb</h4>
+
+    <table>
+      <tr><th>Setting</th><th>Default</th><th>Notes</th></tr>
+      <tr><td>Chunk size</td><td>200&ndash;500 tokens</td><td>Match to embedding model's sweet spot</td></tr>
+      <tr><td>Overlap</td><td>10&ndash;20%</td><td>0 if using late or contextual</td></tr>
+      <tr><td>Header prepend</td><td>Always</td><td>Source path, section title, page number</td></tr>
+      <tr><td>Boundaries</td><td>Semantic</td><td>Paragraph &gt; sentence &gt; word. Never mid-sentence.</td></tr>
+      <tr><td>Don't chunk if</td><td>doc &lt; 30% of model context</td><td>Just retrieve whole. 1M-context models change the math.</td></tr>
+    </table>
+
+    <h4>Chunk metadata enrichment</h4>
+
+    <p>A chunk is not just text. Production retrievers stack metadata onto each chunk &mdash; some indexed, some used at filter time, some only at injection. Generated once at ingest with a cheap LLM; pays back at every query.</p>
+
+    <div class="diagram">
+      <span class="diagram-label">Anatomy of an enriched chunk</span>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">&middot;</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Breadcrumb</div>
+          <div class="dgm-stage-desc">Doc title &gt; chapter &gt; section &gt; subsection. Inherited from the structural pass. Cheap filter; great in BM25.</div>
+        </div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">&middot;</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Summary (1&ndash;2 sentences)</div>
+          <div class="dgm-stage-desc">What this chunk is about. Indexed alongside the chunk body; lifts recall on summary-style queries.</div>
+        </div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">&middot;</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Keywords (5&ndash;10)</div>
+          <div class="dgm-stage-desc">Extracted noun phrases. Indexed in BM25 with a boost. Catches exact-term queries that the body paraphrases.</div>
+        </div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">&middot;</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Entities</div>
+          <div class="dgm-stage-desc">People, places, orgs, products, dates. Typed. Powers structured filters ("only docs mentioning Acme").</div>
+        </div>
+      </div>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">&middot;</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Hypothetical questions (HyDE-style, index-side)</div>
+          <div class="dgm-stage-desc">3&ndash;5 questions this chunk answers. Embedded and indexed. Query embeddings match these better than the chunk body.</div>
+        </div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">&middot;</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Parent / sibling refs</div>
+          <div class="dgm-stage-desc">IDs of the parent section chunk and adjacent siblings. Enables small-to-big retrieval and context expansion at inject time.</div>
+        </div>
+      </div>
+    </div>
+
+    <h4>Raw vs enriched, side by side</h4>
+
+    <div class="dgm-cmp">
+      <div class="bad">
+        <h6>Raw chunk (typical)</h6>
+<pre data-lang="json" style="margin: 0; border: none; padding: 0;">{
+  "id": "c_482",
+  "text": "Acme reported Q2 revenue
+  of $148M, up 12% YoY..."
+}</pre>
+      </div>
+      <div class="good">
+        <h6>Enriched chunk</h6>
+<pre data-lang="json" style="margin: 0; border: none; padding: 0;">{
+  "id": "c_482",
+  "text": "Acme reported Q2...",
+  "breadcrumb": "10-K > Item 7 > Q2",
+  "summary": "Q2 revenue rose 12% YoY,
+    driven by EMEA enterprise.",
+  "keywords": ["Q2 revenue", "YoY",
+    "EMEA", "enterprise"],
+  "entities": {
+    "orgs": ["Acme"],
+    "dates": ["Q2 2025"]
+  },
+  "questions": [
+    "What was Acme's Q2 revenue?",
+    "Which region drove growth?"
+  ],
+  "parent": "c_478",
+  "model_version": "haiku-4-5"
+}</pre>
+      </div>
+    </div>
+
+    <h4>Generating it in one pass</h4>
+
+<pre data-lang="typescript"><span class="k">import</span> { generateObject } <span class="k">from</span> <span class="s">'ai'</span>;
+<span class="k">import</span> { z } <span class="k">from</span> <span class="s">'zod'</span>;
+
+<span class="k">const</span> ChunkMeta = z.<span class="f">object</span>({
+  summary: z.<span class="f">string</span>().<span class="f">describe</span>(<span class="s">'1-2 sentences capturing the chunk'</span>),
+  keywords: z.<span class="f">array</span>(z.<span class="f">string</span>()).<span class="f">min</span>(<span class="l">3</span>).<span class="f">max</span>(<span class="l">10</span>),
+  entities: z.<span class="f">object</span>({
+    people: z.<span class="f">array</span>(z.<span class="f">string</span>()),
+    orgs: z.<span class="f">array</span>(z.<span class="f">string</span>()),
+    places: z.<span class="f">array</span>(z.<span class="f">string</span>()),
+    dates: z.<span class="f">array</span>(z.<span class="f">string</span>()),
+  }),
+  questions: z.<span class="f">array</span>(z.<span class="f">string</span>()).<span class="f">min</span>(<span class="l">3</span>).<span class="f">max</span>(<span class="l">5</span>)
+    .<span class="f">describe</span>(<span class="s">'questions a user might ask whose answer is in this chunk'</span>),
+});
+
+<span class="k">const</span> { object: meta } = <span class="k">await</span> <span class="f">generateObject</span>({
+  model: <span class="s">'claude-haiku-4-5'</span>,  <span class="c">// cheap; one call per chunk</span>
+  schema: ChunkMeta,
+  prompt: <span class="s">`Extract metadata from this chunk:\n\n</span>${chunk.text}<span class="s">`</span>,
+  temperature: <span class="l">0</span>,
+  providerOptions: {
+    anthropic: { cacheControl: { type: <span class="s">'ephemeral'</span> } },
+    <span class="c">// Cache the schema + system prompt across all N chunks.</span>
+  },
+});
+</pre>
+
+    <h4>How each field is used at retrieval time</h4>
+
+    <table>
+      <tr><th>Field</th><th>BM25 index</th><th>Vector index</th><th>Filter</th><th>Inject</th></tr>
+      <tr><td>Breadcrumb</td><td>yes (boost ~2&times;)</td><td>concat to body</td><td>yes</td><td>show as header</td></tr>
+      <tr><td>Summary</td><td>yes (boost ~3&times;)</td><td>separate vector</td><td>&mdash;</td><td>before chunk body</td></tr>
+      <tr><td>Keywords</td><td>yes (boost ~4&times;)</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>Entities</td><td>yes</td><td>&mdash;</td><td>yes (faceted)</td><td>&mdash;</td></tr>
+      <tr><td>Questions</td><td>yes</td><td>separate vectors</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>Parent ref</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>expand context</td></tr>
+    </table>
+
+    <div class="callout steal">
+      <div class="callout-head">Why index-side questions matter</div>
+      Query embeddings encode <em>questions</em>. Chunk embeddings encode <em>statements</em>. The gap between them causes half of all retrieval failures. Embedding 3&ndash;5 LLM-generated questions per chunk puts question-shaped vectors in the index. HyDE's effect, paid once at ingest instead of every query.
+    </div>
+
+    <h4>Document-level enrichment</h4>
+
+    <p>Per-chunk metadata is one half. The other half lives one level up: per-document. Generate once at ingest, attach to every chunk's payload.</p>
+
+    <ul class="bare">
+      <li><strong>Abstract</strong> &mdash; 3&ndash;5 sentence summary of the whole document. Used in router prompts: "which doc is this query about?"</li>
+      <li><strong>Topic tags</strong> &mdash; controlled vocabulary if you have one; free-form if you don't. Faceted filters.</li>
+      <li><strong>Doc type</strong> &mdash; contract, report, email, transcript, manual. Different retrieval and injection policies per type.</li>
+      <li><strong>Date range</strong> &mdash; min/max date mentioned. Powers temporal filtering ("answers from 2025 only").</li>
+      <li><strong>Author / source</strong> &mdash; provenance. Trust weighting at rerank time.</li>
+    </ul>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch18">
+  <div class="ch-head">
+    <div class="ch-num">18</div>
+    <div>
+      <h2 class="ch-title">Embeddings &amp; vectors</h2>
+      <p class="ch-tldr">Three dimensions of choice &mdash; model, vector type, vector size. All three affect cost, recall, precision.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>Vector retrieval is the right tool when: (a) the corpus is large and unstructured, (b) queries are fuzzy/semantic, (c) you can't anticipate what to grep for.</p>
+
+    <h4>The pipeline</h4>
+
+    <div class="diagram">
+      <span class="diagram-label">Vector retrieval · index time + query time</span>
+      <div class="dgm-pipeline" style="margin-bottom: 1rem;">
+        <div class="node">Parse</div><span class="sep">→</span>
+        <div class="node">Chunk</div><span class="sep">→</span>
+        <div class="node">Embed</div><span class="sep">→</span>
+        <div class="node primary">Index</div>
+        <span style="color: var(--ink-dim); font-family: var(--f-body); font-style: italic; margin-left: 1rem; font-size: 0.75rem;">index time</span>
+      </div>
+      <div class="dgm-pipeline">
+        <div class="node">Query</div><span class="sep">→</span>
+        <div class="node">Embed</div><span class="sep">→</span>
+        <div class="node">Top-K</div><span class="sep">→</span>
+        <div class="node">Rerank</div><span class="sep">→</span>
+        <div class="node primary">Inject</div>
+        <span style="color: var(--ink-dim); font-family: var(--f-body); font-style: italic; margin-left: 1rem; font-size: 0.75rem;">query time</span>
+      </div>
+    </div>
+
+    <h4>Three dimensions of choice</h4>
+
+    <p>Every retrieval system makes the same three decisions. Knowing the axes lets you tune cost vs quality deliberately.</p>
+
+    <table>
+      <tr><th>Axis</th><th>Options</th><th>Trade-off</th></tr>
+      <tr><td>Vector type</td><td>Dense / Sparse / Multi-vector / Multimodal</td><td>Storage vs precision</td></tr>
+      <tr><td>Dimensions</td><td>256 &middot; 768 &middot; 1024 &middot; 1536 &middot; 3072</td><td>Recall vs cost</td></tr>
+      <tr><td>Model family</td><td>General / Domain / Multilingual</td><td>Coverage vs specialization</td></tr>
+    </table>
+
+    <h4>Vector type</h4>
+
+    <ul class="bare">
+      <li><strong>Dense</strong> &mdash; single vector per chunk. Default. OpenAI <code>text-embedding-3</code>, Voyage-3, Cohere-embed-v4. Fast, cheap, well-understood.</li>
+      <li><strong>Sparse</strong> &mdash; learned sparse vectors (SPLADE, BM25-extended). Preserves exact-match signal alongside semantics. Larger storage. Good for catching rare terms.</li>
+      <li><strong>Multi-vector / late interaction</strong> &mdash; multiple vectors per chunk (one per token). ColBERT, ColPali. Higher quality, ~10&times; storage. Critical for high-precision retrieval.</li>
+      <li><strong>Multimodal</strong> &mdash; text + image share a vector space. CLIP for general; ColPali for documents-as-images. Lets you retrieve figures and pages without OCR.</li>
+    </ul>
+
+    <h4>Matryoshka embeddings &mdash; one model, many sizes</h4>
+
+    <p>Trained so that the first <em>k</em> dimensions of an N-dim vector are themselves a valid embedding. Available in OpenAI <code>text-embedding-3-*</code>, Voyage v3, Jina v3, and others. Lets you cascade retrieval:</p>
+
+    <div class="diagram">
+      <span class="diagram-label">Two-stage matryoshka cascade</span>
+      <div class="dgm-pipeline">
+        <div class="node">Query</div><span class="sep">→</span>
+        <div class="node">Embed @ 3072d</div><span class="sep">→</span>
+        <div class="node primary">Truncate to 256d</div><span class="sep">→</span>
+        <div class="node">ANN top 200</div><span class="sep">→</span>
+        <div class="node primary">Full 3072d rerank</div><span class="sep">→</span>
+        <div class="node">Top 20</div>
+      </div>
+      <p class="dgm-caption">First stage uses 256-dim for cheap+fast ANN. Second stage rescores with full vectors. Combines speed with quality.</p>
+    </div>
+
+    <h4>Provider quick-pick</h4>
+
+    <table>
+      <tr><th>Model</th><th>Dim</th><th>Notes</th></tr>
+      <tr><td><code>openai/text-embedding-3-small</code></td><td>1536 (matryoshka)</td><td>Baseline. Cheap. Truncates to 256/512.</td></tr>
+      <tr><td><code>openai/text-embedding-3-large</code></td><td>3072 (matryoshka)</td><td>Higher quality. Same family, more nuance.</td></tr>
+      <tr><td><code>voyage-3-large</code></td><td>1024</td><td>Often tops benchmarks. Strong retrieval tuning.</td></tr>
+      <tr><td><code>cohere/embed-v4</code></td><td>1024 / 1536</td><td>Multilingual. Retrieval-tuned. Long context.</td></tr>
+      <tr><td><code>jina-embeddings-v3</code></td><td>1024</td><td>8K context. Native <code>late_chunking</code> param.</td></tr>
+      <tr><td><code>bge-m3</code> / <code>bge-large</code></td><td>1024</td><td>Open source. Strong baseline. Run locally.</td></tr>
+      <tr><td><code>colpali-v1.3</code> / <code>colqwen2.5</code></td><td>multi-vec</td><td>Visual document retrieval. Skip OCR.</td></tr>
+    </table>
+
+    <h4>The AI SDK call</h4>
+
+<pre data-lang="typescript"><span class="k">import</span> { embed, embedMany, cosineSimilarity } <span class="k">from</span> <span class="s">'ai'</span>;
+<span class="k">import</span> { openai } <span class="k">from</span> <span class="s">'@ai-sdk/openai'</span>;
+
+<span class="c">// Index time — batch embed</span>
+<span class="k">const</span> { embeddings } = <span class="k">await</span> <span class="f">embedMany</span>({
+  model: openai.<span class="f">embedding</span>(<span class="s">'text-embedding-3-large'</span>, { dimensions: <span class="l">1024</span> }),
+  values: chunks.<span class="f">map</span>(c =&gt; c.text),
+});
+<span class="k">await</span> <span class="f">vectorStore.upsert</span>(chunks.<span class="f">map</span>((c, i) =&gt; ({ ...c, embedding: embeddings[i] })));
+
+<span class="c">// Query time — single embed + ANN</span>
+<span class="k">const</span> { embedding: q } = <span class="k">await</span> <span class="f">embed</span>({
+  model: openai.<span class="f">embedding</span>(<span class="s">'text-embedding-3-large'</span>, { dimensions: <span class="l">1024</span> }),
+  value: query,
+});
+<span class="k">const</span> hits = <span class="k">await</span> <span class="f">vectorStore.search</span>(q, { topK: <span class="l">50</span> });
+</pre>
+
+    <h4>Two injection patterns</h4>
+
+    <div class="compare">
+      <div>
+        <h5>RAG via middleware</h5>
+        Transparent. Model doesn't know retrieval happened. <code>transformParams</code> injects context into the last user message.
+        <br><br>
+        <strong>Good for:</strong> always-on grounding, simple chatbots.
+      </div>
+      <div>
+        <h5>RAG via tool</h5>
+        Model calls a <code>search</code> tool when it decides. Returns ranked snippets the model reasons over.
+        <br><br>
+        <strong>Good for:</strong> selective retrieval, agentic flows, when query rewriting matters.
+      </div>
+    </div>
+
+    <div class="callout gotcha">
+      <div class="callout-head">Vector RAG gotchas</div>
+      Re-embed everything when you change models. Don't mix dimensions in one index. Don't index PII without policy. Always store the embedding model name with the vector &mdash; future-you will need to know what generated it. Have a re-index plan; embeddings drift as models improve.
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch19">
+  <div class="ch-head">
+    <div class="ch-num">19</div>
+    <div>
+      <h2 class="ch-title">Reranking</h2>
+      <p class="ch-tldr">Retrieval finds candidates (recall). Reranker scores them (precision). Two-stage is non-negotiable.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>Vector similarity has high recall but mediocre precision past top-10. Cross-encoders trade speed for accuracy &mdash; perfect for scoring a small candidate set.</p>
+
+    <h4>Bi-encoder vs cross-encoder</h4>
+
+    <div class="dgm-cmp">
+      <div>
+        <h6>Bi-encoder (retrieval)</h6>
+<pre data-lang="text" style="margin: 0; border: none; padding: 0;">encode(query) → q
+encode(doc)   → d
+score = cos(q, d)</pre>
+        <ul>
+          <li>Each encoded once, independently</li>
+          <li>Cacheable, indexable</li>
+          <li>Lossy &mdash; no query/doc interaction</li>
+          <li>Fast: ms per query over millions of docs</li>
+        </ul>
+      </div>
+      <div>
+        <h6>Cross-encoder (reranker)</h6>
+<pre data-lang="text" style="margin: 0; border: none; padding: 0;">encode(query, doc) → score
+(jointly attend)</pre>
+        <ul>
+          <li>Encoded together; full attention</li>
+          <li>Per-pair compute &mdash; cannot pre-index</li>
+          <li>High precision</li>
+          <li>Slow: ~10&ndash;100ms per pair</li>
+        </ul>
+      </div>
+    </div>
+
+    <h4>The two-stage pipeline</h4>
+
+    <div class="diagram">
+      <span class="diagram-label">Retrieve-then-rerank</span>
+      <div class="dgm-pipeline">
+        <div class="node">Query</div><span class="sep">→</span>
+        <div class="node">Vector ANN</div><span class="sep">→</span>
+        <div class="node">Top 50&ndash;200</div><span class="sep">→</span>
+        <div class="node primary">Cross-encoder rerank</div><span class="sep">→</span>
+        <div class="node primary">Top 5&ndash;10</div><span class="sep">→</span>
+        <div class="node">Inject</div>
+      </div>
+      <p class="dgm-caption">Bi-encoder picks the universe; cross-encoder picks the answer. Always.</p>
+    </div>
+
+    <h4>Reranker options</h4>
+
+    <table>
+      <tr><th>Reranker</th><th>Strength</th><th>Cost</th></tr>
+      <tr><td><code>cohere/rerank-3</code></td><td>Top-tier quality; multilingual</td><td>~$2/1000 reranks</td></tr>
+      <tr><td><code>voyage/rerank-2</code></td><td>Competitive with Cohere</td><td>~$0.05/M tokens</td></tr>
+      <tr><td><code>jina/reranker-v2</code></td><td>Open weights option</td><td>Self-host or API</td></tr>
+      <tr><td><code>BGE Reranker</code></td><td>Open source; runs locally</td><td>GPU time only</td></tr>
+      <tr><td>LLM-as-judge</td><td>Highest ceiling; most expensive</td><td>Per-token model rates</td></tr>
+    </table>
+
+    <h4>Beyond cross-encoders</h4>
+
+    <ul class="bare">
+      <li><strong>MMR &mdash; Maximal Marginal Relevance.</strong> Rerank for diversity. Avoid returning five near-duplicates when the top-5 vectors all came from the same doc. <code>score = λ·rel(q,d) − (1−λ)·max&nbsp;sim(d, selected)</code>.</li>
+      <li><strong>LLM scoring with rubric.</strong> Pass top-K to a fast model with a structured scoring prompt. More expensive than dedicated rerankers but lets you encode arbitrary criteria.</li>
+      <li><strong>Cascade rerankers.</strong> <code>bge-small &rarr; bge-large &rarr; cohere-rerank-3</code>. Each tier prunes more aggressively. Net cost lower than a single large reranker over the full top-K.</li>
+    </ul>
+
+    <h4>When to skip reranking</h4>
+
+    <p>If the model has a 1M-token context and you can afford the inference cost, just stuff the top 50 into the prompt and let the model attend. The model <em>is</em> the cross-encoder. This is increasingly economical with Gemini 2.5 Pro / Claude Sonnet 4.6.</p>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch20">
+  <div class="ch-head">
+    <div class="ch-num">20</div>
+    <div>
+      <h2 class="ch-title">Hybrid retrieval</h2>
+      <p class="ch-tldr">Four kinds of "hybrid." Pick by data shape, not by trend.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>"Hybrid retrieval" is overloaded. The 2024&ndash;25 wave settled on four distinct compositions, each solving a different failure mode of pure vector search.</p>
+
+    <div class="diagram">
+      <span class="diagram-label">The four hybrids</span>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">A</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Filesystem + Vector</div>
+          <div class="dgm-stage-desc">Structured app data via grep/ls; unstructured prose via embeddings. One <code>search</code> tool with a scope parameter.</div>
+        </div>
+      </div>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">B</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Sparse + Dense (BM25 + Vector)</div>
+          <div class="dgm-stage-desc">The popular one. BM25 catches exact terms; vectors catch semantics. Fuse with <strong>RRF</strong>.</div>
+        </div>
+      </div>
+      <div class="dgm-stage primary">
+        <div class="dgm-stage-num">C</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Contextual Retrieval (Anthropic)</div>
+          <div class="dgm-stage-desc">BM25 + Vector + LLM-generated context blurbs prepended to chunks. -49% retrieval failure; -67% with reranker.</div>
+        </div>
+      </div>
+      <div class="dgm-stage">
+        <div class="dgm-stage-num">D</div>
+        <div class="dgm-stage-body">
+          <div class="dgm-stage-name">Visual + Text (ColPali-style)</div>
+          <div class="dgm-stage-desc">Embed pages as images alongside text. Layout becomes a retrieval signal.</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>A &middot; Filesystem + Vector</h3>
+
+    <p>For agents over structured data <em>and</em> unstructured docs. One agent-facing <code>search</code> tool dispatches internally:</p>
+
+<pre data-lang="typescript"><span class="k">const</span> search = <span class="f">tool</span>({
+  description: <span class="s">'Search across records (structured) and docs (unstructured). Returns top matches with sources.'</span>,
+  inputSchema: z.<span class="f">object</span>({
+    query: z.<span class="f">string</span>(),
+    scope: z.<span class="f">enum</span>([<span class="s">'records'</span>, <span class="s">'docs'</span>, <span class="s">'all'</span>]).<span class="f">describe</span>(
+      <span class="s">'records=grep over filesystem, docs=vector search, all=both'</span>),
+  }),
+  execute: <span class="k">async</span> ({ query, scope }) =&gt; {
+    <span class="k">const</span> results = [];
+    <span class="k">if</span> (scope !== <span class="s">'docs'</span>) results.<span class="f">push</span>(...<span class="k">await</span> <span class="f">fsGrep</span>(query));
+    <span class="k">if</span> (scope !== <span class="s">'records'</span>) results.<span class="f">push</span>(...<span class="k">await</span> <span class="f">vectorSearch</span>(query));
+    <span class="k">return</span> <span class="k">await</span> <span class="f">rerank</span>(query, results, { topK: <span class="l">8</span> });
+  },
+});
+</pre>
+
+    <h3>B &middot; Sparse + Dense via RRF</h3>
+
+    <p>The default for any general text corpus where queries mix exact-match and semantic. BM25 is a classic lexical scorer. Vectors are semantic. Neither is sufficient alone.</p>
+
+    <div class="dgm-cmp">
+      <div>
+        <h6>BM25 catches</h6>
+        <ul>
+          <li>Product codes, order IDs</li>
+          <li>Proper nouns, person names</li>
+          <li>Rare technical terms</li>
+          <li>Exact phrases users typed</li>
+        </ul>
+      </div>
+      <div>
+        <h6>Vectors catch</h6>
+        <ul>
+          <li>Paraphrases, synonyms</li>
+          <li>Conceptual similarity</li>
+          <li>Cross-lingual matches</li>
+          <li>Intent behind the words</li>
+        </ul>
+      </div>
+    </div>
+
+    <h4>Reciprocal Rank Fusion</h4>
+
+    <p>Combining the two systems means combining their rankings. Score normalization is fragile (BM25 is unbounded; cosine is [-1,1]; outliers skew). <strong>RRF sidesteps the problem by using ranks, not scores.</strong></p>
+
+    <div class="diagram">
+      <span class="diagram-label">RRF · merging two ranked lists</span>
+      <div class="dgm-rrf">
+        <div class="lane">
+          <div class="lane-head">BM25 rank</div>
+          <div class="row hit"><span class="d">doc_42</span><span class="r">#1</span></div>
+          <div class="row"><span class="d">doc_07</span><span class="r">#2</span></div>
+          <div class="row hit"><span class="d">doc_91</span><span class="r">#3</span></div>
+        </div>
+        <div class="merge">⊕</div>
+        <div class="lane">
+          <div class="lane-head">Vector rank</div>
+          <div class="row"><span class="d">doc_91</span><span class="r">#1</span></div>
+          <div class="row hit"><span class="d">doc_42</span><span class="r">#2</span></div>
+          <div class="row"><span class="d">doc_55</span><span class="r">#3</span></div>
+        </div>
+        <div class="merge">→</div>
+        <div class="lane">
+          <div class="lane-head">RRF fused</div>
+          <div class="row hit"><span class="d">doc_42</span><span class="r">0.0325</span></div>
+          <div class="row hit"><span class="d">doc_91</span><span class="r">0.0322</span></div>
+          <div class="row"><span class="d">doc_07</span><span class="r">0.0161</span></div>
+        </div>
+      </div>
+      <p class="dgm-caption">RRF score for each doc = <code>Σ 1 / (k + rank<sub>i</sub>)</code>, <code>k ≈ 60</code>. Higher rank in either system → higher fused score. Rank-based, so it's robust across heterogeneous scorers.</p>
+    </div>
+
+<pre data-lang="typescript"><span class="k">function</span> <span class="f">rrf</span>(rankings: <span class="t">Map</span>&lt;string, number&gt;[], k = <span class="l">60</span>): <span class="t">Map</span>&lt;string, number&gt; {
+  <span class="k">const</span> scores = <span class="k">new</span> <span class="f">Map</span>&lt;string, number&gt;();
+  <span class="k">for</span> (<span class="k">const</span> ranks <span class="k">of</span> rankings) {
+    <span class="k">for</span> (<span class="k">const</span> [docId, rank] <span class="k">of</span> ranks) {
+      scores.<span class="f">set</span>(docId, (scores.<span class="f">get</span>(docId) ?? <span class="l">0</span>) + <span class="l">1</span> / (k + rank));
+    }
+  }
+  <span class="k">return</span> scores;
+}
+
+<span class="c">// Usage:</span>
+<span class="k">const</span> bm25Hits = <span class="k">await</span> <span class="f">bm25Search</span>(query, { topK: <span class="l">50</span> });
+<span class="k">const</span> vecHits  = <span class="k">await</span> <span class="f">vectorSearch</span>(query, { topK: <span class="l">50</span> });
+<span class="k">const</span> fused = <span class="f">rrf</span>([<span class="f">toRanks</span>(bm25Hits), <span class="f">toRanks</span>(vecHits)]);
+<span class="k">const</span> reranked = <span class="k">await</span> <span class="f">rerank</span>(query, <span class="f">topN</span>(fused, <span class="l">20</span>), { topK: <span class="l">5</span> });
+</pre>
+
+    <h3>C &middot; Contextual Retrieval (Anthropic)</h3>
+
+    <p>Layered on top of (B). Before indexing each chunk, an LLM writes a short situating context (50&ndash;100 tokens). The contextualised chunk is what gets embedded AND BM25-indexed.</p>
+
+    <div class="diagram">
+      <span class="diagram-label">Contextual retrieval pipeline</span>
+      <div class="dgm-pipeline" style="margin-bottom: 0.75rem;">
+        <div class="node">Chunk</div><span class="sep">+</span>
+        <div class="node">Full doc</div><span class="sep">→</span>
+        <div class="node primary">LLM context blurb</div><span class="sep">→</span>
+        <div class="node">Contextualised chunk</div>
+      </div>
+      <div class="dgm-pipeline">
+        <div class="node">Contextualised chunk</div><span class="sep">→</span>
+        <div class="node">BM25 index</div>
+        <span style="margin: 0 0.5rem; color: var(--ink-dim);">+</span>
+        <div class="node">Embed → vector index</div>
+      </div>
+      <p class="dgm-caption">Cost is mostly one-time at index time. Cache the full doc across all chunk-context calls with prompt caching. Anthropic reports <strong>-49% retrieval failure</strong> alone, <strong>-67% with reranker</strong>.</p>
+    </div>
+
+    <p>Example context blurb the LLM generates:</p>
+
+<pre data-lang="text">"This chunk is from Acme Corp's Q2 2025 earnings call transcript, in
+the section where the CFO discusses margin compression in the EMEA
+region following the EUR weakening."
+
+[Original chunk follows]
+</pre>
+
+    <p>That blurb is now part of what BM25 and vectors match against. A query like <em>"Acme EMEA margins Q2"</em> hits even if the original chunk only said <em>"the region took an 80bp hit."</em></p>
+
+    <h3>D &middot; Visual + Text (ColPali / ColQwen)</h3>
+
+    <p>For PDFs where the visual layout encodes meaning &mdash; financial reports, scientific papers with figures, slide decks, forms. ColPali variants feed page images to a vision-language model and produce multi-vector embeddings via late interaction. <strong>No OCR step, no chunker, no layout-loss.</strong></p>
+
+    <div class="dgm-cmp">
+      <div class="bad">
+        <h6>Text pipeline on layout-heavy docs</h6>
+        <ul>
+          <li>OCR drops figure captions to wrong column</li>
+          <li>Tables become text spaghetti</li>
+          <li>Equations get mangled</li>
+          <li>Charts lost entirely</li>
+        </ul>
+      </div>
+      <div class="good">
+        <h6>ColPali on the same docs</h6>
+        <ul>
+          <li>Page-as-image; ViT patches embedded</li>
+          <li>Late-interaction match at retrieval time</li>
+          <li>Layout, charts, figures all signals</li>
+          <li>Single end-to-end trainable model</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>Trade-off: multi-vector storage is ~10&times; dense embeddings. Use only when document <em>visuals</em> carry information you can't afford to drop.</p>
+
+    <h3>Decision matrix &mdash; which hybrid for which corpus</h3>
+
+    <table>
+      <tr><th>Corpus shape</th><th>Pick</th></tr>
+      <tr><td>App-internal data (CRM, tickets, configs) + KB docs</td><td><strong>A.</strong> Filesystem + Vector</td></tr>
+      <tr><td>General text corpus, exact-match terms matter</td><td><strong>B.</strong> BM25 + Vector via RRF</td></tr>
+      <tr><td>Complex docs where retrieval failure rate is the bottleneck</td><td><strong>C.</strong> Contextual Retrieval</td></tr>
+      <tr><td>PDFs with charts, figures, complex layouts</td><td><strong>D.</strong> ColPali visual</td></tr>
+      <tr><td>Heterogeneous mix of all the above</td><td>One <code>search</code> tool that dispatches by scope</td></tr>
+    </table>
+
+    <div class="callout steal">
+      <div class="callout-head">Production pattern</div>
+      Let the model pick the scope. Single <code>search</code> tool, an <code>enum</code> param naming each backend, descriptions that explain their strengths. Set <code>temperature: 0</code> for the routing call. Modern models reliably pick "grep for exact things, semantic for fuzzy things" when the descriptions are clear.
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PART VII — SCALING -->
+<!-- ============================================== -->
+
+<div class="part-marker">
+  <span class="part-roman">VII.</span>
+  <span class="part-name">Scaling</span>
+  <span class="part-dash"></span>
+  <span>Providers, UI, dispatch</span>
+</div>
+
+<section class="chapter" id="ch21">
+  <div class="ch-head">
+    <div class="ch-num">21</div>
+    <div>
+      <h2 class="ch-title">Providers &amp; middleware</h2>
+      <p class="ch-tldr">Aliases for swappability. Middleware for cross-cutting concerns. Prompt caching for cost.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <h4>Custom provider with aliases</h4>
+
+<pre data-lang="typescript"><span class="k">import</span> { customProvider, wrapLanguageModel, defaultSettingsMiddleware } <span class="k">from</span> <span class="s">'ai'</span>;
+<span class="k">import</span> { anthropic } <span class="k">from</span> <span class="s">'@ai-sdk/anthropic'</span>;
+
+<span class="k">export</span> <span class="k">const</span> ai = <span class="f">customProvider</span>({
+  languageModels: {
+    <span class="s">'fast'</span>: anthropic(<span class="s">'claude-haiku-4-5'</span>),
+    <span class="s">'main'</span>: anthropic(<span class="s">'claude-sonnet-4-6'</span>),
+    <span class="s">'reasoning'</span>: <span class="f">wrapLanguageModel</span>({
+      model: anthropic(<span class="s">'claude-opus-4-7'</span>),
+      middleware: <span class="f">defaultSettingsMiddleware</span>({
+        settings: {
+          providerOptions: {
+            anthropic: { thinking: { type: <span class="s">'enabled'</span>, budgetTokens: <span class="l">32_000</span> } },
+          },
+        },
+      }),
+    }),
+  },
+  fallbackProvider: anthropic,
+});
+
+<span class="c">// Usage:</span>
+<span class="k">const</span> result = <span class="f">streamText</span>({ model: ai.<span class="f">languageModel</span>(<span class="s">'main'</span>), ... });
+</pre>
+
+    <p>Now swapping models is one line. Per-task model selection (cheap for classification, smart for reasoning) becomes trivial.</p>
+
+    <h4>Middleware: three hooks</h4>
+
+    <table>
+      <tr><th>Hook</th><th>Fires on</th><th>Use for</th></tr>
+      <tr><td><code>transformParams</code></td><td>Both generate and stream</td><td>RAG injection, parameter rewriting, request logging</td></tr>
+      <tr><td><code>wrapGenerate</code></td><td><code>generateText</code> / <code>generateObject</code></td><td>Caching, guardrails, output filtering</td></tr>
+      <tr><td><code>wrapStream</code></td><td><code>streamText</code> / <code>streamObject</code></td><td>Stream caching, real-time logging, smoothing</td></tr>
+    </table>
+
+    <h4>Built-in middleware worth knowing</h4>
+
+    <ul class="bare">
+      <li><code>extractReasoningMiddleware({ tagName: 'think' })</code> &mdash; extract <code>&lt;think&gt;...&lt;/think&gt;</code> into a <code>reasoning</code> field.</li>
+      <li><code>simulateStreamingMiddleware()</code> &mdash; expose non-streaming models through the streaming interface.</li>
+      <li><code>defaultSettingsMiddleware({ settings: {...} })</code> &mdash; bake in defaults (max tokens, provider options).</li>
+      <li><code>addToolInputExamplesMiddleware({ examplesPrefix: 'Examples:' })</code> &mdash; serialise <code>inputExamples</code> into descriptions for providers that don't support them natively.</li>
+    </ul>
+
+    <h4>Anthropic prompt caching</h4>
+
+<pre data-lang="typescript">streamText({
+  model: ai.<span class="f">languageModel</span>(<span class="s">'main'</span>),
+  system: STATIC_SYSTEM_PROMPT,  <span class="c">// cacheable</span>
+  messages,
+  providerOptions: {
+    anthropic: {
+      cacheControl: { type: <span class="s">'ephemeral'</span> },
+    },
+  },
+});
+</pre>
+
+    <p>5-minute TTL on Anthropic. Cache hits cut cost by ~90% on the prefix. Cache busts when any byte of the cached region changes &mdash; so dynamic content stays out of the system prompt.</p>
+
+    <h4>Caching middleware (for full responses)</h4>
+
+<pre data-lang="typescript"><span class="k">const</span> cacheMiddleware: <span class="t">LanguageModelV3Middleware</span> = {
+  wrapGenerate: <span class="k">async</span> ({ doGenerate, params }) =&gt; {
+    <span class="k">const</span> key = <span class="f">JSON.stringify</span>(params);
+    <span class="k">const</span> cached = <span class="k">await</span> redis.<span class="f">get</span>(key);
+    <span class="k">if</span> (cached) <span class="k">return</span> cached;
+    <span class="k">const</span> result = <span class="k">await</span> <span class="f">doGenerate</span>();
+    <span class="k">await</span> redis.<span class="f">set</span>(key, result);
+    <span class="k">return</span> result;
+  },
+  wrapStream: <span class="k">async</span> ({ doStream, params }) =&gt; {
+    <span class="c">// For streams: collect chunks → cache → replay with simulateReadableStream</span>
+    ...
+  },
+};
+</pre>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch22">
+  <div class="ch-head">
+    <div class="ch-num">22</div>
+    <div>
+      <h2 class="ch-title">Streaming &amp; UI</h2>
+      <p class="ch-tldr">Stream by default. Suppress errors into the stream (callers love that). Anti-flicker is a contract, not a hack.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <h4>streamText vs generateText</h4>
+
+    <table>
+      <tr><th>Use streamText for</th><th>Use generateText for</th></tr>
+      <tr><td>Chat UIs (perceived latency matters)</td><td>Classifiers, routers, summaries</td></tr>
+      <tr><td>Long outputs (≥ a paragraph)</td><td>Single-shot decisions</td></tr>
+      <tr><td>Anything user-visible</td><td>Internal pipelines</td></tr>
+    </table>
+
+    <h4>The streamText error trap</h4>
+
+    <p><code>streamText</code> suppresses errors <strong>into the stream</strong> to avoid crashing servers. If you don't register <code>onError</code>, errors disappear silently:</p>
+
+<pre data-lang="typescript"><span class="k">const</span> result = <span class="f">streamText</span>({
+  model, messages,
+  onError: ({ error }) =&gt; logger.<span class="f">error</span>({ err: error }, <span class="s">'stream error'</span>),  <span class="c">// REQUIRED</span>
+  onAbort: ({ steps }) =&gt; <span class="f">markAborted</span>(steps),                                <span class="c">// distinct from onFinish</span>
+  onFinish: ({ messages: final, totalUsage }) =&gt; <span class="f">persistAndTrack</span>(final, totalUsage),
+});
+</pre>
+
+    <h4>Smoothing the stream</h4>
+
+<pre data-lang="typescript"><span class="k">import</span> { smoothStream } <span class="k">from</span> <span class="s">'ai'</span>;
+
+<span class="k">const</span> result = <span class="f">streamText</span>({
+  model, messages,
+  experimental_transform: <span class="f">smoothStream</span>(),  <span class="c">// uniform delta cadence</span>
+});
+</pre>
+
+    <p>Combine with client-side throttle (<code>experimental_throttle: 50</code> on <code>useChat</code>) for sub-perceptual jank.</p>
+
+    <h4>Custom transform for synthetic finishes</h4>
+
+    <p>When you stop the stream early (step cap, guardrail trip, budget), you must emit synthetic <code>finish-step</code> and <code>finish</code> events or downstream code hangs:</p>
+
+<pre data-lang="typescript">experimental_transform: () =&gt; <span class="k">new</span> <span class="f">TransformStream</span>({
+  transform(chunk, controller) {
+    <span class="k">if</span> (chunk.type === <span class="s">'finish'</span> &amp;&amp; <span class="f">capWasHit</span>()) {
+      <span class="c">// Splice in a notice for the user before the natural finish</span>
+      controller.<span class="f">enqueue</span>({ type: <span class="s">'text-start'</span>, id: <span class="s">'notice'</span> });
+      controller.<span class="f">enqueue</span>({ type: <span class="s">'text-delta'</span>, id: <span class="s">'notice'</span>, delta: <span class="s">'\n\n…Reached the step cap. Ask me to continue.'</span> });
+      controller.<span class="f">enqueue</span>({ type: <span class="s">'text-end'</span>, id: <span class="s">'notice'</span> });
+    }
+    controller.<span class="f">enqueue</span>(chunk);
+  },
+}),
+</pre>
+
+    <h4>The anti-flicker contract</h4>
+
+    <p>For UIs that show server-derived status <strong>and</strong> let the user trigger mutations, optimistic updates flicker unless you do three things together:</p>
+
+    <ol>
+      <li><strong>In-flight registry</strong> &mdash; track <code>{kind, id}</code> for every active mutation. <code>beginMutation()</code> / <code>endMutation()</code>.</li>
+      <li><strong>Mask all error fields while mutating</strong> &mdash; not just status. <code>lastError</code>, <code>dependencyError</code>, anything that could contradict the loading state.</li>
+      <li><strong>Skip polling while mutations in flight</strong> &mdash; reschedule short (~400ms). Resume normal cadence when registry empties.</li>
+    </ol>
+
+    <div class="callout gotcha">
+      <div class="callout-head">Why not <code>useOptimistic</code>?</div>
+      The optimistic state vanishes the moment the <code>startTransition</code> callback returns; the network await happens outside the transition. Symptom: "see Cancel for a split second, then back to disabled Approve." Use plain <code>useState</code> + per-ID override map + poll reconciliation.
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch23">
+  <div class="ch-head">
+    <div class="ch-num">23</div>
+    <div>
+      <h2 class="ch-title">Subagents &amp; hooks</h2>
+      <p class="ch-tldr">Subagents = fresh context, full brief. Forks = shared context, share cache. Hooks = lifecycle extensibility.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <h4>Subagent vs fork</h4>
+
+    <table>
+      <tr><th></th><th>Subagent (fresh)</th><th>Fork</th></tr>
+      <tr><td>Context</td><td>Empty &mdash; full brief required</td><td>Inherits parent</td></tr>
+      <tr><td>Cache</td><td>Cold</td><td>Hits parent's prompt cache</td></tr>
+      <tr><td>Result</td><td>Single message back to parent</td><td>Same</td></tr>
+      <tr><td>Best for</td><td>Independent tasks ("research X")</td><td>Speculative branches ("try approach Y")</td></tr>
+    </table>
+
+    <h4>Writing a good subagent prompt</h4>
+
+    <p>Brief like a smart colleague who just walked into the room &mdash; explain the goal, what you've ruled out, and what success looks like:</p>
+
+    <blockquote class="verbatim">
+      Brief the agent like a smart colleague who just walked into the room — it hasn't seen this conversation, doesn't know what you've tried, doesn't understand why this task matters.
+      Explain what you're trying to accomplish and why.
+      Describe what you've already learned or ruled out.
+      Give enough context that the agent can make judgment calls.
+      Never delegate understanding. Don't write "based on your findings, fix the bug." Write prompts that prove you understood: include file paths, line numbers, what specifically to change.
+      <cite>Claude Code AgentTool/prompt.ts</cite>
+    </blockquote>
+
+    <h4>Forks share cache</h4>
+
+    <p>For forks, the parent's <code>(systemPrompt, userContext, systemContext, tools)</code> must match. Same params &rarr; cache hit &rarr; near-zero cost for the prefix.</p>
+
+    <blockquote class="verbatim">
+      <strong>Don't peek.</strong> Do not Read or tail the fork output unless the user explicitly asks.<br>
+      <strong>Don't race.</strong> Never fabricate or predict fork results in any format.
+      <cite>Claude Code AgentTool/prompt.ts &mdash; parent-side discipline</cite>
+    </blockquote>
+
+    <h4>Hooks: lifecycle injection points</h4>
+
+    <p>Hooks let users (or your own infrastructure) inject behaviour at lifecycle events. Common events:</p>
+
+    <table>
+      <tr><th>Event</th><th>What you can do</th></tr>
+      <tr><td>PreToolUse</td><td>Block the call, modify input, inject additional context</td></tr>
+      <tr><td>PostToolUse</td><td>Log, transform output, fire side effects</td></tr>
+      <tr><td>Stop</td><td>Verify-before-finish; refuse to stop if conditions unmet</td></tr>
+      <tr><td>PreCompact / PostCompact</td><td>Save state before lossy operations; restore after</td></tr>
+      <tr><td>UserPromptSubmit</td><td>Pre-process user input, attach context, deny</td></tr>
+      <tr><td>SessionStart / SessionEnd</td><td>Set up / tear down per-session state</td></tr>
+    </table>
+
+    <h4>Teaching the model about hooks</h4>
+
+    <blockquote class="verbatim">
+      Users may configure 'hooks', shell commands that execute in response to events like tool calls. Treat feedback from hooks, including <code>&lt;user-prompt-submit-hook&gt;</code>, as coming from the user. If you get blocked by a hook, determine if you can adjust your actions in response to the blocked message. If not, ask the user to check their hooks configuration.
+      <cite>Claude Code constants/prompts.ts</cite>
+    </blockquote>
+
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PART VIII — PRODUCTION -->
+<!-- ============================================== -->
+
+<div class="part-marker">
+  <span class="part-roman">VIII.</span>
+  <span class="part-name">Ship</span>
+  <span class="part-dash"></span>
+  <span>The checklist</span>
+</div>
+
+<section class="chapter" id="ch24">
+  <div class="ch-head">
+    <div class="ch-num">24</div>
+    <div>
+      <h2 class="ch-title">Production checklist</h2>
+      <p class="ch-tldr">If you can't tick all of these, you're going to find out which one you needed at 3am.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <h4>Loop</h4>
+    <ul class="check" style="list-style:none;padding-left:0;">
+      <li><code>stopWhen: stepCountIs(N)</code> &mdash; hard ceiling.</li>
+      <li>A cost / budget stop condition.</li>
+      <li><code>prepareStep</code> handles message-history slicing past a threshold.</li>
+      <li><code>onStepFinish</code> persists every step.</li>
+      <li>Every <code>tool_use</code> has a paired <code>tool_result</code> on exit (including aborts).</li>
+    </ul>
+
+    <h4>Tools</h4>
+    <ul class="check" style="list-style:none;padding-left:0;">
+      <li>≤15 tools, narrow surfaces, every field has <code>.describe()</code>.</li>
+      <li>Optional params use <code>.nullable()</code>, not <code>.optional()</code>.</li>
+      <li>Errors return <code>{ok:false, error:{code, message, hint}}</code> instead of throwing.</li>
+      <li>"Did you mean…" suggestions on not-found errors.</li>
+      <li>Per-tool result size cap; persist overflow to disk and return a preview.</li>
+      <li><code>isReadOnly</code> / <code>isConcurrencySafe</code> metadata on every tool.</li>
+      <li><code>experimental_repairToolCall</code> registered.</li>
+    </ul>
+
+    <h4>Context</h4>
+    <ul class="check" style="list-style:none;padding-left:0;">
+      <li>System prompt split into static + dynamic with a sentinel marker.</li>
+      <li>Anthropic <code>cacheControl: 'ephemeral'</code> on the static prefix.</li>
+      <li>Per-turn metadata in a prepended <code>&lt;system-reminder&gt;</code> user message.</li>
+      <li>Model is taught what <code>&lt;system-reminder&gt;</code> means.</li>
+      <li>File-state cache keyed on <code>(path, mtime)</code>; returns dedup stub for unchanged files.</li>
+      <li>Attachments are <strong>deltas</strong>, not snapshots.</li>
+    </ul>
+
+    <h4>Survival</h4>
+    <ul class="check" style="list-style:none;padding-left:0;">
+      <li>Compaction triggers from <strong>tokens</strong>, not message count.</li>
+      <li>Three tiers: slice &rarr; microcompact &rarr; summarise.</li>
+      <li>Summary prompt has <code>TEXT ONLY</code> preamble and trailer.</li>
+      <li>Post-compaction re-injection: files, plan, skills, deltas.</li>
+      <li><code>MAX_CONSECUTIVE_COMPACT_FAILURES = 3</code> circuit breaker.</li>
+      <li>Provider retry with exponential backoff + jitter, max 10 attempts.</li>
+      <li>Foreground vs background discrimination on 529.</li>
+      <li>Model fallback on repeated 529.</li>
+      <li>PTL / max-tokens errors withheld from caller until recovery exhausts.</li>
+      <li>Heartbeat yields during long waits (host idle-kill protection).</li>
+      <li>No stop-hooks on a failed turn.</li>
+    </ul>
+
+    <h4>Memory</h4>
+    <ul class="check" style="list-style:none;padding-left:0;">
+      <li><code>UIMessage[]</code> stored, not <code>ModelMessage[]</code>.</li>
+      <li>Atomic write (tmp + rename) on save.</li>
+      <li>Server-side message IDs.</li>
+      <li>Pre-flight save of user turn before model call.</li>
+      <li><code>validateUIMessages</code> on load with <code>TypeValidationError</code> fallback.</li>
+      <li><code>consumeStream()</code> called (no await) to survive client disconnect.</li>
+      <li>Memory file format: frontmatter + body, index in <code>MEMORY.md</code> kept ≤200 lines.</li>
+      <li>Model taught about memory: what to save, what NOT to save, "ignore memory" override.</li>
+    </ul>
+
+    <h4>Retrieval</h4>
+    <ul class="check" style="list-style:none;padding-left:0;">
+      <li>Structured data lives in a directory tree, not a vector DB.</li>
+      <li>Path traversal / symlink escape checks on every read/write.</li>
+      <li>OCR output is Markdown, not raw text. Tables, headings, lists preserved.</li>
+      <li>Source page index stored with every chunk; citations resolve to origin.</li>
+      <li>Embedding model name stored alongside every vector.</li>
+      <li>Chunks have a prepended header (source path, section, page); 10&ndash;20% overlap.</li>
+      <li>Two-stage retrieval: bi-encoder candidates &rarr; cross-encoder rerank.</li>
+      <li>For BM25 + vector hybrid: RRF (rank-based), not score fusion.</li>
+      <li>Re-index plan documented for when embedding model changes.</li>
+      <li>Vector retrieval used only where filesystem retrieval is genuinely insufficient.</li>
+    </ul>
+
+    <h4>UI &amp; observability</h4>
+    <ul class="check" style="list-style:none;padding-left:0;">
+      <li><code>onError</code> registered on <code>streamText</code> (else silent failures).</li>
+      <li><code>onAbort</code> distinct from <code>onFinish</code>.</li>
+      <li>Anti-flicker contract enforced where polling meets mutations.</li>
+      <li>Every API route has a request ID; logs are pre-bound with it.</li>
+      <li>Error envelopes are structured (code, message, retryable flag).</li>
+    </ul>
+
+    <p style="margin-top: 2rem; font-style: italic; color: var(--ink-muted); font-size: 0.95rem;">
+      You don't need all of these on day one. You'll discover which one you skipped at the worst possible moment. Plan for which moment that will be.
+    </p>
+
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- PART IX — HARD-WON -->
+<!-- ============================================== -->
+
+<div class="part-marker">
+  <span class="part-roman">IX.</span>
+  <span class="part-name">Hard-won</span>
+  <span class="part-dash"></span>
+  <span>Five laws, measured in shipped code</span>
+</div>
+
+<section class="chapter" id="ch25">
+  <div class="ch-head">
+    <div class="ch-num">25</div>
+    <div>
+      <h2 class="ch-title">Absence is not a determination</h2>
+      <p class="ch-tldr">Three outcomes need three values, and the unknown one is never the default. Found twelve times in eleven layers.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>A boolean cannot carry <em>yes</em>, <em>no</em>, and <em>we could not tell</em>. Forced to, the third state collapses into whichever of the other two is cheaper to write &mdash; and that is almost always the reassuring one. <strong>Pass the error, not the absence of data</strong>, because <code>null</code> means two things.</p>
+
+    <p>Any encoding with fewer states than the data has is this defect. That includes <strong>visual</strong> encodings, which is where it is hardest to see, because no string is wrong.</p>
+
+    <div class="compare">
+      <div class="dont">
+        <h5>Two states</h5>
+        A chart drew a reading with <em>no reference range</em> as a filled circle &mdash; identical to one confirmed in range.
+      </div>
+      <div class="do">
+        <h5>Three states</h5>
+        In range, out of range, and unknown &rarr; dashed and unfilled. The third case now looks like what it is.
+      </div>
+    </div>
+
+    <div class="callout gotcha">
+      <div class="callout-head">It arrives inside libraries you do not control</div>
+      A <em>disabled</em> query reporting <code>isPending: true</code> is indistinguishable from one in flight &mdash; so a screen gated on another fetch renders a skeleton forever, with no exit. A dismissed dialog left mounted with <code>data-closed</code> means presence is not openness. When a third-party flag conflates "no information" with "no", <strong>derive the state you need instead of reading theirs</strong>.
+    </div>
+
+    <h4>The hardest sub-shape: a correct fail-closed normaliser, read by a second consumer</h4>
+    <p>A normaliser mapping absent &rarr; unsupported is <em>right</em> for resolution, because unknown must fail closed. But ask it <em>"did the record state a value?"</em> and the answer can never be no &mdash; so "nothing given" and "explicitly unsupported" become one value, and a whole branch goes unreachable even with a correct fixture.</p>
+
+    <p><strong>Nobody suspects code that is correct for its own purpose.</strong> Read the raw field when the question is whether something was stated.</p>
+
+    <div class="callout tip">
+      <div class="callout-head">Assume another instance exists</div>
+      Every time we have looked, it has. Full treatment: <code>lessons/01-thinking-framework.md</code>.
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch26">
+  <div class="ch-head">
+    <div class="ch-num">26</div>
+    <div>
+      <h2 class="ch-title">Populations, not passes</h2>
+      <p class="ch-tldr">A check states a property over a set. A green result is a claim about the set it reached &mdash; not about your system.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p><em>"40 of 40 routes observed"</em> is true, and reads as more than it is. <strong>When a check passes, ask what it could not see.</strong></p>
+
+    <p>Three instruments, three blind spots. Not a hierarchy:</p>
+
+    <div class="constants">
+      <dl>
+        <dt>String / AST sweep</dt>
+        <dd>Finds the sites you thought of. Blind to anything spelled differently &mdash; a single-line pattern cannot see a call that wrapped across lines. Found 13.</dd>
+        <dt>Gate over a derived population</dt>
+        <dd>Finds whatever its population reaches, which is always narrower than the name suggests. Found 8 more.</dd>
+        <dt>Opening the rendered result</dt>
+        <dd>Finds the rest. Slow, unrepeatable, no coverage claim. Found the one the other two structurally could not reach.</dd>
+      </dl>
+    </div>
+
+    <h4>Three ways a population fails, each needing a different fix</h4>
+    <ol>
+      <li><strong>You measured the wrong artifact.</strong> A scan of server-rendered bytes on a client-rendered product saw <strong>1</strong> element where <strong>37</strong> rendered. The predicate was right; the population was a loading skeleton. <em>Observe the real output, and refuse to fall back to the cheap proxy.</em></li>
+      <li><strong>An instrument page masked it.</strong> A component gallery renders everything, so it contributed <strong>861</strong> hits while real pages contributed one each. <strong>The instrument page hid the instrument's blindness.</strong> Same page, two jobs; trustworthy for one. <em>Know which job you are doing.</em></li>
+      <li><strong>A dynamic route enters as one instance.</strong> One id per route shape means one instance is observable and the rest are not. <em>Genuinely hard &mdash; enumerating instances makes the population hand-maintained again, which is what deriving it was for.</em></li>
+    </ol>
+
+    <div class="callout gotcha">
+      <div class="callout-head">A check that cannot fail is not evidence</div>
+      Two fallback tests were quietly satisfied by the authoritative source, so the leg under test never ran. <em>"It returned the right answer"</em> does not say which branch produced it. Split the I/O from a pure function over resolved inputs, so a higher-precedence source can be forced absent <strong>and proven absent in the same assertion</strong>.
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch27">
+  <div class="ch-head">
+    <div class="ch-num">27</div>
+    <div>
+      <h2 class="ch-title">Permissions, not prohibitions</h2>
+      <p class="ch-tldr">You cannot enumerate the absences. A guard written as a blocklist is wrong by construction.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>A guard derived by subtraction from a known vocabulary cannot drift. One written as a list of bad cases drifts the first time reality invents a new one.</p>
+
+    <p>A database trigger listing the <em>blocked</em> cases let a <code>NULL</code> match no clause and land in a gated table &mdash; allow-by-omission, which is <a href="#ch25">ch. 25</a> again: a boolean standing in for three states, where the unhandled one is the reassuring answer. Inverted to name what is <em>allowed</em> and refuse the rest, it immediately surfaced a hole nobody had reported.</p>
+
+    <h4>A negated character class is a blocklist &mdash; and it is the form nobody recognises as one</h4>
+
+    <div class="compare">
+      <div class="dont">
+        <h5>Listing what may not appear</h5>
+        <code>/&lt;\/strong&gt;[A-Za-z]/</code><br>
+        "the letters that may not follow a closing tag". <code>Cancel&mdash; the link</code> ships straight through: <strong>an em dash is not a letter.</strong>
+      </div>
+      <div class="do">
+        <h5>Stating the property</h5>
+        A character may abut the tag only if it <em>cannot begin the next word</em>. The em dash fails without anyone having had to think of it.
+      </div>
+    </div>
+
+    <p>Same class, twice more in the same file:</p>
+    <ul class="bare">
+      <li><code>&lt;[^&gt;]+&gt;</code> to strip tags forgets that <code>&gt;</code> is legal inside a quoted attribute &mdash; so <code>alt="ratio &gt; 1"</code> ends the tag early and leaks markup into text you then treat as prose.</li>
+      <li>A negated class capturing a label stopped at the apostrophe in <em>"the patient's own data"</em> and silently truncated it, because <strong>prose contains quotes</strong>.</li>
+    </ul>
+
+    <div class="callout steal">
+      <div class="callout-head">The tell is grammatical</div>
+      If you can only say what a class is <em>for</em> by listing what it excludes, invert it.
+    </div>
+
+    <p><strong>Mechanical corollary: an unbounded substring is not a word.</strong> <code>"ast"</code> matched <em>iodinated contrast</em>; <code>"alt"</code> matched <em>salt</em> and <em>altered</em>; <code>"ring "</code> with a trailing space matched <em>offering</em> and <strong>suppressed a real finding</strong>. Bind every literal with <code>\b</code>, and keep stems as deliberate stems.</p>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch28">
+  <div class="ch-head">
+    <div class="ch-num">28</div>
+    <div>
+      <h2 class="ch-title">Guard where it lands</h2>
+      <p class="ch-tldr">An assertion one boundary away from the decision is decoration. And a documented promise nobody enforces is worse than no promise.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>Classify what a value <em>is</em>, wherever it is written &mdash; not what container it went into. A gate checking table names let "anaphylaxis to penicillin" land as a <em>problem</em>: visible in one view, invisible to the allergy query.</p>
+
+    <h4>An unenforced documented promise is worse than an undocumented one</h4>
+
+    <p>A type comment carried the guarantee <em>"composed from our own words and a position &mdash; never the filename"</em>, enforced nowhere, and the client rendered the raw value on the one channel that is spoken aloud, unskippable, and invisible to visual review.</p>
+
+    <div class="callout gotcha">
+      <div class="callout-head">The comment is load-bearing in the wrong direction</div>
+      <strong>It makes the code look audited.</strong> A reader opens the type, sees the guarantee, believes the invariant holds, and stops &mdash; so the documented promise actively suppresses the check that would have enforced it. Unenforced and undocumented is a hole. Unenforced and <em>documented</em> is a hole with a sign over it saying the floor is solid.
+    </div>
+
+    <p><strong>When a value crosses a trust boundary, the assertion has to live on the far side of it.</strong> Two verifiers did assert this invariant &mdash; both over values <em>our own code composed from our own mock's data</em>, so neither could ever see a server-supplied one. The tests were right and the population was wrong (<a href="#ch26">ch. 26</a>).</p>
+
+    <h4>If a shared component states a fact about its caller, make the caller supply it</h4>
+
+    <div class="compare">
+      <div class="do">
+        <h5>Closed key space</h5>
+        <code>Record&lt;Kind, Copy&gt;</code> with no index signature and no fallback. A seventh kind is a <strong>compile error</strong> &mdash; the compiler asks the question instead of a reviewer noticing.
+      </div>
+      <div class="dont">
+        <h5>Loose, with a fallback claim</h5>
+        <code>Record&lt;string, Copy&gt; ?? fallback</code>. A seventh kind silently inherits a sentence that is false about it.
+      </div>
+    </div>
+
+    <p>The tell that finds these: <strong>a shared string sitting beside two or three maps keyed off the same discriminant.</strong> The maps got the treatment and the sentence did not, which is exactly why it drifted.</p>
+
+    <div class="callout tip">
+      <div class="callout-head">But the rule is not "tighten every map"</div>
+      Tighten when the key space is a <strong>closed discriminant and a miss would render something false</strong>. Stay loose when the key space is <strong>open and a miss correctly renders nothing</strong>. A loose type is a bug only when the fallback is a claim.
+    </div>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch29">
+  <div class="ch-head">
+    <div class="ch-num">29</div>
+    <div>
+      <h2 class="ch-title">Blast radius</h2>
+      <p class="ch-tldr">A gate can cause the harm it exists to prevent. And caution compounds into uselessness &mdash; the failure nobody warns you about.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <h4>A gate can cause the harm it prevents</h4>
+    <p>A banned-word check over device-claim verbs would fail the page that <em>disclaims</em> them &mdash; <em>"does not diagnose, treat, cure, or prevent any disease"</em> is the standard form and cannot be written without them. A literal check there pressures someone into softening the most load-bearing sentence in the product.</p>
+
+    <p>Word gates must be polarity-aware or scope-exempt. <strong>Prose about a hazard is not exempt from the hazard</strong> &mdash; the same shape took down every dev server on the project when a comment documenting a gitignore glob ended in <code>*/</code> and closed its own block comment early, <em>while warning about a different way to break the build</em>.</p>
+
+    <h4>Never condition a penalty on the presence of an honest disclosure</h4>
+    <p>A gate fired when an answer omitted a verified rule <strong>and</strong> admitted it could not verify something. The cheapest way to pass was to delete the <em>"what I could not check"</em> paragraph &mdash; and an answer that omitted the rule <em>and hid the gap</em> passed clean.</p>
+
+    <div class="callout gotcha">
+      <div class="callout-head">The rule</div>
+      <strong>A gate whose easiest satisfaction is less honesty is worse than no gate.</strong> Related: never make a gate go red when someone <em>improves</em> something. A ratchet whose count may only fall should print the command to lower its own baseline, not fail on a decrease. A gate that punishes progress is a gate people switch off.
+    </div>
+
+    <h4>Caution compounds into uselessness</h4>
+
+    <p>This does not look like a bug in any single place. Every individual refusal is defensible; stacked, they produce a product that cannot do the thing it exists to do. Because each one reads as responsible in isolation, <strong>code review will not catch it</strong>. The dial gets raised once per feature and never lowered.</p>
+
+    <p>A document-reading product told users <em>"Nobody here has looked at these images. Interpreting a medical image is not something this system does."</em> Seven separate sites &mdash; the prompt, a subagent brief, a tool description, an extractor &mdash; each independently cautious, all collectively describing a tool that refused its own purpose. <strong>Fixing it made the prompt smaller.</strong></p>
+
+    <div class="callout steal">
+      <div class="callout-head">The test</div>
+      Read your refusals end to end, <strong>as one document</strong>, and ask whether what remains is the product you set out to build. Then ask of each one: <em>should this be a warning instead?</em> A warning preserves the capability and informs the user; a refusal removes it. <strong>Most over-caution is a warning that got promoted.</strong>
+    </div>
+
+    <h4>Two structural defences</h4>
+    <ul class="bare">
+      <li><strong>Keep genuine safety output exempt from every brevity, density and suppression rule</strong> &mdash; enforced structurally, so the tuning machinery cannot see it. Then aggressive tuning elsewhere is safe by construction, and you can tune hard. A carve-out you have to remember is not a carve-out.</li>
+      <li><strong>Measure precision before shipping a gate that blocks.</strong> One citation gate, replayed over <strong>259 real answers, flagged 179 pairs at 11% precision</strong> &mdash; and it was already live, already stripping real citations out of output users read. See <a href="#ch30">ch. 30</a> &rarr; <code>08-measurement.md</code>.</li>
+    </ul>
+
+  </div>
+</section>
+
+<section class="chapter" id="ch30">
+  <div class="ch-head">
+    <div class="ch-num">30</div>
+    <div>
+      <h2 class="ch-title">The lessons</h2>
+      <p class="ch-tldr">Nine docs in <code>lessons/</code>. Everything measured in working, tested code &mdash; not reasoned about in advance.</p>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <p>Chapters 1&ndash;24 are the design space. <code>lessons/</code> is what broke anyway, and <code>references/</code> holds the primary sources behind both.</p>
+
+    <div class="constants">
+      <dl>
+        <dt><a href="lessons/01-thinking-framework.md">01 &mdash; The five laws</a></dt>
+        <dd>Always first. Chapters 25&ndash;29 above, plus <em>fix the mechanism not the site</em> and <em>an example in a spec will be rendered as real content</em>.</dd>
+        <dt><a href="lessons/02-system-prompts.md">02 &mdash; System prompts</a></dt>
+        <dd>Altitude, a hard token ceiling, the caution dial, and why a guard you have never seen fire is a guard you have not tested.</dd>
+        <dt><a href="lessons/03-tools.md">03 &mdash; Tools</a></dt>
+        <dd>Never hand the model two parallel lists it must zip &mdash; twelve of nineteen real mis-citations were that one shape. Refusals need destinations; a filter is a cap too.</dd>
+        <dt><a href="lessons/04-context.md">04 &mdash; Context</a></dt>
+        <dd>Pruning and compaction as separate layers. The summary needs a format, not a budget. Persist a boundary record or resume is unreproducible.</dd>
+        <dt><a href="lessons/05-memory.md">05 &mdash; Memory</a></dt>
+        <dd>Bound it and fail loud. Frozen snapshot for the cache. Memory is a claim, not an instruction &mdash; invert the override you inherited from a coding harness.</dd>
+        <dt><a href="lessons/06-automation.md">06 &mdash; Automation &amp; notifications</a></dt>
+        <dd>Cron vs heartbeat. Never let background output become user input. Told-state, lanes, one run per session, and failing <em>open</em> on duplicate suppression.</dd>
+        <dt><a href="lessons/07-fault-tolerance.md">07 &mdash; Fault tolerance</a></dt>
+        <dd>Classify before retrying. A guard in three places is enforced at its weakest copy. Your own tooling is the least trustworthy instrument you own.</dd>
+        <dt><a href="lessons/08-measurement.md">08 &mdash; Measurement</a></dt>
+        <dd>Read before quoting any number. One run resolves ~4 cases; a tie is absence of resolution. Your fixture is part of the measurement.</dd>
+        <dt><a href="lessons/09-multi-agent.md">09 &mdash; Multi-agent</a></dt>
+        <dd>A pathspec separates files, not agents. Shared build state produces defects that look like source errors.</dd>
+      </dl>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-head">One warning about all of it</div>
+      Every harness component encodes an assumption about what the model cannot do alone, and those assumptions expire. Some rules here exist because a model of a particular generation needed help. <strong>Remove one component at a time and measure</strong> &mdash; and read <code>08-measurement.md</code> first, because <em>"we removed it and nothing broke"</em> is not a measurement at the resolution one run gives you.
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+</div>
+
+<footer>
+  <div>
+    <h6>The Production Agent Playbook</h6>
+    <p>A field manual for engineers shipping production LLM agents. Patterns extracted from <em>Vercel AI SDK 6</em> documentation and the deobfuscated <em>Claude Code</em> CLI internals. Optimised for re-reading.</p>
+    <p style="margin-top: 1rem; font-size: 0.78rem;">Verbatim quotes are from production code, not paraphrases. Numbers (retry counts, token thresholds, cache TTLs) are real defaults.</p>
+  </div>
+  <div>
+    <h6>Sources</h6>
+    <p>AI SDK <a href="https://ai-sdk.dev/docs">documentation</a></p>
+    <p>AI SDK <a href="https://ai-sdk.dev/cookbook">cookbook</a></p>
+    <p>Anthropic <a href="https://docs.claude.com">model docs</a></p>
+    <p>Filesystem-agent <a href="https://vercel.com/blog/we-removed-80-percent-of-our-agents-tools">doctrine</a></p>
+    <p style="margin-top: 0.6rem;">Context &amp; harness posts &rarr; <a href="references/README.md">references/</a></p>
+    <p>Part IX &rarr; <a href="lessons/README.md">lessons/</a></p>
+  </div>
+  <div>
+    <h6>Read order</h6>
+    <p>First time? <em>1 → 2 → 3 → 6 → 9 → 12 → 24</em>, then <em>25</em>.</p>
+    <p>Debugging an agent in prod? Jump to <em>10, 11, 22</em>.</p>
+    <p>Designing memory? <em>13, 14</em>.</p>
+    <p>Designing retrieval? <em>15 → 16 → 17 → 18 → 19 → 20</em>.</p>
+    <p>Production hardening? <em>4, 5, 9, 10, 24</em>.</p>
+    <p>About to trust a green check? <em>26</em>. About to ship a gate? <em>29</em>.</p>
+    <p>About to quote a number? <em><a href="lessons/08-measurement.md">lessons/08</a></em>. First.</p>
+  </div>
+</footer>
+
+</body>
+</html>
