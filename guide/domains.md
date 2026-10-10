@@ -33,7 +33,7 @@ no clipped speech, source media unchanged. Agree duration tolerance and audio ta
 
 | Layer | What to build |
 |---|---|
-| Runtime | Reuse a coding/general agent for planning and tool selection |
+| Controller | Build a small model/tool loop or use an agent engine for planning and dispatch |
 | Domain | Versioned timeline, asset hashes, edit operations, undo/history |
 | Capability | Renderer with job IDs, progress, cancellation, temporary outputs |
 | Review | Technical checks plus pacing, continuity, framing, caption readability |
@@ -103,3 +103,6 @@ instruction to let every task run forever. Protect held-out evaluation from opti
 **Ideas:** literature claim-checking; experiment schedulers; spreadsheet reconciliation; CAD
 variants checked against geometric constraints; sound-editing candidates judged on loudness and
 listening quality. Every new niche starts by defining its representation, actions, and evidence.
+
+For a laptop-based scientific harness combining structure data, simulations, script editing and
+remote jobs, see [the scientific pattern](../skills/build-agent-harness/references/domains.md#scientific-research-local-first-remote-compute-when-needed).

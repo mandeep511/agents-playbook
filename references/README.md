@@ -97,3 +97,35 @@ of community consensus.
 
 [Machine-readable source manifest](manifest.json) records URL, retrieval date, snapshot/note type,
 size, and SHA-256 for the eight saved sources.
+
+
+## Construction and execution research · 10 October 2026
+
+The [construction recipe](../skills/build-agent-harness/references/construction.md),
+[compute comparison](../skills/build-agent-harness/references/execution.md), and
+[local security guide](../skills/build-agent-harness/references/local-security.md) are original
+synthesis with direct primary citations. They are not provider benchmarks or full-page snapshots.
+
+| Read | What to learn |
+|---|---|
+| [Mini SWE Agent](https://github.com/SWE-agent/mini-swe-agent) | Small Python core with model/environment separation |
+| [smolagents](https://github.com/huggingface/smolagents) | Code and tool-call styles; local executor is not automatically a security sandbox |
+| [Armin Ronacher on Pi](https://lucumr.pocoo.org/2026/1/31/pi/) | Minimal extensible foundations, an author's perspective |
+| [Anthropic: brain and hands](https://www.anthropic.com/engineering/managed-agents) | Separate session, controller and sandbox responsibilities |
+| [AlphaFold 3 installation](https://github.com/google-deepmind/alphafold3/blob/main/docs/installation.md) | Real compute/setup requirements; local orchestration does not make every tool lightweight |
+
+Additional community evidence, **anecdotal and sometimes promotional**:
+
+- [Do I need E2B/Daytona?](https://www.reddit.com/r/AI_Agents/comments/1unl2r3/how_are_you_actually_using_agent_sandboxes_like/)
+  raises container-versus-service setup and state-management tradeoffs. Do not repeat commenters'
+  latency figures or vendor isolation claims as verified facts.
+- [Unified sandbox interfaces](https://www.reddit.com/r/AgentsOfAI/comments/1s2lxv4/unified_interface_for_ai_sandboxes/)
+  illustrates why a portable adapter still needs provider-specific lifecycle capabilities.
+- [Local code sandboxing](https://www.reddit.com/r/LocalLLaMA/comments/1ubp4q3/sandboxing_code_execution_for_ai_agents/)
+  surfaces setup friction and divergent security advice. The official Node documentation explicitly
+  rejects treating `node:vm` as a security mechanism.
+
+Fresh X searches did not yield sufficiently verifiable primary posts for additional technical
+claims. We used official documentation, repos, author blogs and accessible Reddit threads instead
+of presenting mirrored posts as verified tweets. Three research agents investigated independently;
+recommendations remain editorial judgments, not consensus or product testing.

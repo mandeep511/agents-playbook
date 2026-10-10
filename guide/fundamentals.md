@@ -20,6 +20,11 @@ interfaces, state, boundaries, and feedback that make those choices useful.
 This taxonomy is an editorial design aid; projects use “harness” differently. Separate the
 responsibilities before comparing products. [Agent/eval definitions](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents).
 
+**Runtime is overloaded:** an agent controller is the model/tool-loop software; Python or
+Node is a language runtime; a laptop/container/VM is an execution environment. Choose them
+independently. [Build a controller from scratch](../skills/build-agent-harness/references/construction.md)
+and [choose compute](../skills/build-agent-harness/references/execution.md).
+
 ## 2. Think in feedback loops
 
 ```text

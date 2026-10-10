@@ -5,7 +5,10 @@ A compact output structure; it does not require a large framework.
 | Decision | Required content |
 |---|---|
 | Task | Real input, work product, observable success, non-goals |
-| Layer | Runtime / capability / domain / evaluation; components reused |
+| Scope | Controller / capability / domain / evaluation; components built or reused |
+| Stack | Language, model adapter, product surface; why these fit the task |
+| Execution | Host/container/VM/service; CPU/GPU, dependencies, network, state lifetime |
+| Trust | What executed code can read/change; credentials kept outside; isolation chosen |
 | Action | Name, typed arguments/units, target ID, expected revision, side effects |
 | Authority | Scope, credentials, authorization reference, executor enforcement |
 | Result | Pending/succeeded/failed/unknown; evidence; external operation ID |

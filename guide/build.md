@@ -10,7 +10,8 @@ Fill this before implementing. Unknowns stay explicit; do not invent production 
 |---|---|
 | User and task | One real request and its work product |
 | Scope | Runtime, capability, domain, or evaluation harness |
-| Reuse | Existing runtime, tools, renderer/controller, storage |
+| Build or reuse | Controller, tools, renderer, storage; choose based on the task |
+| Placement | Language, product surface, execution host, trust boundary and resource needs |
 | Completion | Observable checks and who grades subjective quality |
 | Authority | Allowed effects, credentials, destinations, escalation boundary |
 | Limits | Time, calls, spend, concurrency, cancellation behavior |
@@ -73,7 +74,7 @@ apply edits to an old version.
 
 | Stage | Build | Exit evidence |
 |---|---|---|
-| 0 · Baseline | Existing runtime + simplest tools | Saved trace of one realistic task |
+| 0 · Baseline | Small custom loop or suitable engine + simplest tools | Saved trace of one realistic task |
 | 1 · Vertical slice | Observe → one action → verify | Useful artifact, actual outcome check |
 | 2 · Interruption | Persist/reconcile/resume/cancel | Crash tests leave no unexplained effects |
 | 3 · Domain quality | Expert rubric + preview/review | Output meets both mechanical and taste criteria |

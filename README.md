@@ -9,6 +9,9 @@ For humans starting from zero and agents building in any domain. Updated **10 Oc
 | You need | Read | Leave with |
 |---|---|---|
 | The fundamentals · 8 min | [Harness field guide](guide/fundamentals.md) | A mental model and architecture choices |
+| Build the loop from scratch | [Construction recipe](skills/build-agent-harness/references/construction.md) | A small controller in your chosen stack |
+| Local, backend, serverless or remote compute | [Execution choices](skills/build-agent-harness/references/execution.md) | Conditional sandbox/VM shortlist |
+| A safer local prototype | [Practical security](skills/build-agent-harness/references/local-security.md) | Low-friction defaults and their limits |
 | A build plan · 5 min | [Build and evaluate](guide/build.md) | Contracts, milestones, failure tests |
 | Browser, video, robots, research · 6 min | [Domain patterns](guide/domains.md) | Concrete designs and ideas to adapt |
 | A real self-healing example · 3 min | [Browser-harness teardown](guide/browser-harness.md) | Mechanisms, limits, transferable lessons |
@@ -35,8 +38,9 @@ Environment                websites · media files · physical world
 
 These are responsibilities, not mandatory services. A small system can combine them.
 **Codex / Claude Code and a browser-control harness solve different layers.** A video harness
-can use an existing agent runtime, wrap a renderer, and own a timeline. You do not need to
-rebuild the model loop to invent a powerful new capability.
+can use its own Python controller or an existing agent engine, wrap a renderer, and own a
+timeline. **The controller is software, not the machine.** Its language, UI, execution host,
+and domain tools are separate choices; they can start as modules in one small program.
 
 ## Five questions before choosing a framework
 
@@ -48,8 +52,8 @@ rebuild the model loop to invent a powerful new capability.
 
 ## Use this with an agent
 
-> Read `skills/build-agent-harness/SKILL.md`. Help me build a harness for [domain]. Start from
-> the existing runtime and tools. Define the work product, action contracts, recovery behavior,
+> Read `skills/build-agent-harness/SKILL.md`. Help me build a harness for [domain] in [preferred stack, if any].
+> Choose or build the controller and execution environment to fit. Define the work product, action contracts, recovery behavior,
 > and evidence of success. Implement one end-to-end slice before adding orchestration.
 
 The skill folder is portable and self-contained. Copy `skills/build-agent-harness/` into your

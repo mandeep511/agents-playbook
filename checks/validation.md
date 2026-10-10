@@ -36,3 +36,24 @@ No browser/robot/media integration tests, external repository builds, or model b
 No third-party skills installed. Source snapshots are historical reads, not automatically refreshed.
 X retrieval was limited; the source index explicitly identifies those gaps. External links were
 researched, but the final automated check covers local navigation rather than live URL health.
+
+## General-purpose revision · 10 October 2026
+
+The revised skill separates agent controller, language runtime, execution environment, domain
+interface and product surface. Custom loops are first-class; no coding-agent dependency is assumed.
+
+- Three research agents completed read-only investigations of remote execution, local security,
+  and construction/teaching. Current official sources and explicitly anecdotal community links
+  are attached to the relevant references.
+- Added construction, execution choices and practical-security references, plus a scientific
+  workflow pattern distinguishing structure retrieval, prediction and simulation.
+- Skill-creator validator passed. Latest navigation pass covered **23 authored Markdown files
+  and 79 local links/anchors**; fenced blocks were balanced. `git diff --check` passed.
+- Current skill entry point: **521 words**. Earlier counts above describe the first edition.
+- A reviewer used the actual revised files for a laptop-Python/scientific-workflow design exercise.
+  It proposed an independent controller and later serverless coordination. Findings prompted
+  an explicit tool-result shape, restart-safe local job identity, and the clarification that a
+  trusted interpreter executing an agent-written script still runs generated code.
+- This was a design smoke test, not a controlled comparison or proof of behavioral improvement.
+  No cloud services were provisioned, packages installed, simulations run, or isolation claims
+  experimentally tested. New research notes are authored summaries, not archived full pages.

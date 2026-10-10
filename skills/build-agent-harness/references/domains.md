@@ -27,8 +27,8 @@ hardware validation. Acknowledgment differs from completed placement.
 
 ## General work / coding
 
-Preserve constraints, patches/files, test results, and unresolved operations. Reuse runtime and
-execution environment. Isolate workers or use ownership/version checks. Completion means observed
+Preserve constraints, patches/files, test results, and unresolved operations. Choose or build
+the controller and execution environment to fit the project. Isolate workers or use ownership/version checks. Completion means observed
 behavior and valid deliverables, not a polished message. External submission differs from preparation.
 
 ## Research
@@ -36,3 +36,30 @@ behavior and valid deliverables, not a polished message. External submission dif
 Attach sources and uncertainty to individual claims. Preserve provenance and open questions.
 Bound experiment parameters and runtime; record failed trials as well as wins. Protect held-out
 data from optimization. Validate the metric against the user's actual purpose.
+
+## Scientific research: local first, remote compute when needed
+
+A small Python harness can combine model calls, file editing, terminal access, literature/data
+connectors, and simulation jobs. A server is optional; add one for a UI, collaboration or remote
+access. Keep data acquisition, prediction, simulation and interpretation as distinct operations.
+
+| Tool | Contract and evidence |
+|---|---|
+| Retrieve an existing structure | Database accession/version, URL, file hash, confidence metadata |
+| Submit a prediction | Supported service/local installation, terms/access, input/config hash, job ID |
+| Run a simulation/analysis | Tool version, units, parameters, seed, resource budget, logs and artifacts |
+| Compare/report | Source-linked observations, uncertainty, failed jobs, reproducible commands |
+
+“AlphaFold connection” needs clarification: downloading an existing database prediction,
+running a local inference pipeline and using a hosted service have different APIs, terms and
+compute requirements. Do not invent a universal endpoint. A scientific model's output is a
+prediction, not proof of experimental or clinical validity.
+
+First slice: retrieve a public reference structure, inspect metadata, run a small bounded analysis,
+and write a report linked to its inputs. Use local resources for lightweight work; dispatch heavy
+GPU/long-running jobs to suitable compute. Export artifacts before deleting remote environments.
+Treat this as research infrastructure, not an autonomous wet-lab or clinical decision system.
+
+Sources: [AlphaFold DB FAQ](https://alphafold.ebi.ac.uk/faq),
+[AlphaFold 3 repository](https://github.com/google-deepmind/alphafold3). Check current terms,
+installation requirements and supported access before integration.
